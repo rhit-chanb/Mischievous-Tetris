@@ -73,7 +73,7 @@ public class Tetris extends JPanel {
     };
 
     private final Color[] tetrominoColors = {
-            new Color(15, 155,215), // cyan
+            new Color(15, 155, 215), // cyan
             new Color(227, 91, 2), // orange
             new Color(33, 65, 198), // blue
             new Color(227, 159, 2), // yellow
