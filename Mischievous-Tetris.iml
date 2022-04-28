@@ -13,16 +13,16 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
-      <library>
+      <library name="system">
         <CLASSES>
-          <root url="file://$USER_HOME$/Downloads/atomix-dist-3.0.8/lib/system" />
+          <root url="file://$MODULE_DIR$/system" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="file://$USER_HOME$/Downloads/atomix-dist-3.0.8/lib/system" />
+          <root url="file://$MODULE_DIR$/system" />
         </SOURCES>
-        <jarDirectory url="file://$USER_HOME$/Downloads/atomix-dist-3.0.8/lib/system" recursive="false" />
-        <jarDirectory url="file://$USER_HOME$/Downloads/atomix-dist-3.0.8/lib/system" recursive="false" type="SOURCES" />
+        <jarDirectory url="file://$MODULE_DIR$/system" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/system" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
   </component>
