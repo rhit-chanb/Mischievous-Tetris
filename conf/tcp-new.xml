@@ -9,7 +9,7 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
         >
-    <TCP bind_addr="192.168.137.1:55377"
+    <TCP bind_addr="192.168.137.1"
          bind_port="${jgroups.bind_port:7800}"
          external_addr="${jgroups.external_addr}"
          external_port="${jgroups.external_port}"
@@ -19,7 +19,7 @@
     <RED/>
 
     <TCPPING async_discovery="true"
-             initial_hosts="192.168.137.1:55377, 172.24.160.1:52147"
+             initial_hosts="192.168.137.1[7800], 172.24.160.1[7800]"
              return_entire_cache="${jgroups.tcpping.return_entire_cache:false}"
              port_range="${jgroups.tcp.port_range:2}"/>
     <MERGE3  min_interval="10000"
