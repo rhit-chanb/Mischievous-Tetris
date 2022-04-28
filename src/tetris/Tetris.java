@@ -1,3 +1,9 @@
+package tetris;
+
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ObjectMessage;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
@@ -92,7 +98,12 @@ public class Tetris extends JPanel {
     private Color[][] well;
     private final int softLockConstant = 2;
     private int softLock = softLockConstant;
+    private JChannel channel;
 
+
+    public Tetris(JChannel channel){
+        this.channel = channel;
+    }
 
     // Creates a border around the well and initializes the dropping piece
     private void init() {
@@ -231,15 +242,19 @@ public class Tetris extends JPanel {
         switch (numClears) {
             case 1:
                 score += 100;
+                sendMessage(this.channel.getName() + "Cleared a SINGLE");
                 break;
             case 2:
                 score += 300;
+                sendMessage(this.channel.getName() + "Cleared a DOUBLE");
                 break;
             case 3:
                 score += 500;
+                sendMessage(this.channel.getName() + "Cleared a TRIPLE");
                 break;
             case 4:
                 score += 800;
+                sendMessage(this.channel.getName() + "Cleared a TETRIS");
                 break;
         }
     }
@@ -298,13 +313,22 @@ public class Tetris extends JPanel {
         drawPiece(g);
     }
 
-    public static void main(String[] args) {
+    public void sendMessage(String message){
+        Message msg=new ObjectMessage(null, message);
+        try {
+            channel.send(msg);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void runGame(JChannel channel) {
         JFrame f = new JFrame("Tetris");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(12 * 26 + 10, 26 * 23 + 25);
         f.setVisible(true);
 
-        final Tetris game = new Tetris();
+        final Tetris game = new Tetris(channel);
         game.init();
         f.add(game);
 
