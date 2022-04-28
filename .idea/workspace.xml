@@ -5,11 +5,27 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f8f9c533-9ea6-44f3-ba19-987a6c897ee5" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/clientTest.conf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/clientTest2.conf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/logs/atomix.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/libraries/system.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/system/atomix-agent-3.1.0-beta2.jar" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/system/atomix-cluster-3.1.0-beta2.jar" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/system/atomix-storage-3.1.0-beta2.jar" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Mischievous-Tetris.iml" beforeDir="false" afterPath="$PROJECT_DIR$/Mischievous-Tetris.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/Mischievous-Tetris/AtomixTesting.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Mischievous-Tetris/AtomixTesting.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/Mischievous-Tetris/Tetris$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Mischievous-Tetris/Tetris$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/Mischievous-Tetris/Tetris$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Mischievous-Tetris/Tetris$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/Mischievous-Tetris/Tetris.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/Mischievous-Tetris/Tetris.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/AtomixTesting.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/AtomixTesting.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-3.1.0-beta2.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-agent-3.0.8.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-cluster-3.0.8.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-gossip-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-gossip-3.1.0-beta2.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-primary-backup-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-primary-backup-3.1.0-beta2.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-primitive-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-primitive-3.1.0-beta2.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-raft-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-raft-3.1.0-beta2.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-rest-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-rest-3.1.0-beta2.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-storage-3.0.8.jar" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/system/atomix-utils-3.0.8.jar" beforeDir="false" afterPath="$PROJECT_DIR$/system/atomix-utils-3.1.0-beta2.jar" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,6 +65,7 @@
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />

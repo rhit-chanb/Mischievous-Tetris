@@ -1,18 +1,21 @@
+import io.atomix.cluster.Node;
+import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.core.Atomix;
+import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 
 public class AtomixTesting {
 
     public static void main(String args[]){
         System.out.println("init");
 
-        Atomix atomix = new Atomix("clientTest2.conf");
+//        Atomix atomix = new Atomix("clientTest2.conf");
 
-        /*
+
         // stuff from the website (also throws random null pointers)
         Atomix atomix = Atomix.builder()
   .withMemberId("member1")
-  .withNodeDiscovery(BootstrapDiscoveryProvider.builder()
+  .withMembershipProvider(BootstrapDiscoveryProvider.builder()
     .withNodes(
       Node.builder()
         .withId("member1")
@@ -37,7 +40,7 @@ public class AtomixTesting {
     .withMembers("member1", "member2", "member3")
     .build())
   .build();
-  */
+
 
         atomix.start().join();
 
