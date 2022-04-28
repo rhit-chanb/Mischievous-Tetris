@@ -72,7 +72,7 @@ public class TetrisChat implements Receiver {
 
 
     public static void main(String[] args) throws Exception {
-        String  props="udp.xml";
+        String  props="tcp-new.xml";
         String  name=null;
         boolean nohup=false;
 
