@@ -22,6 +22,7 @@ public class BarebonesServer {
             int connectionNumber = 0;
 
             Socket clientSocket = serverSocket.accept();
+            System.out.println("Connection request received from " + clientSocket.getInetAddress() + " at port " + clientSocket.getPort());
             OutputStream outStream = clientSocket.getOutputStream();
             InputStream inStream = clientSocket.getInputStream();
 
