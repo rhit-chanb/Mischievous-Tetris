@@ -1,11 +1,12 @@
 import java.io.*;
 
-
 public class Transceiver {
     public int contactID;
     public BufferedReader in;
     public PrintWriter out;
     public boolean isClosed;
+
+
 
     public Transceiver(int contactID, InputStream in, OutputStream out) {
         this.contactID = contactID;
@@ -13,16 +14,17 @@ public class Transceiver {
         this.out = new PrintWriter(out, true);
         isClosed = false;
     }
+
     public String receive(){
         if(isClosed){
-            System.out.println("Streams closed, cannot recv");
+            //System.out.println("Streams closed, cannot recv");
             return null;
         }
         String message = "";
         try {
             message = in.readLine();
-            System.out.println("Received message: " + message);
-            if(message.startsWith(MessageType.SHUTDOWN + " ")){
+            //System.out.println("Transceiver received message: " + message);
+            if(message == null || message.startsWith(MessageType.SHUTDOWN + " ")){
                 System.out.println("Received shutdown message, contact is exiting...");
                 this.close();
                 return MessageType.SHUTDOWN.toString();
@@ -37,12 +39,13 @@ public class Transceiver {
 
     public void send(MessageType type, String message){
         if(isClosed){
-            System.out.println("Streams closed, cannot send");
+            //System.out.println("Streams closed, cannot send");
             return;
         }
 
-        System.out.println("Sending message: ");
-        System.out.println(type + " " + message);
+        //System.out.println("Transceiver sending message: ");
+        //System.out.println(type + " " + message);
+
         out.println(type + " " + message);
     }
 

@@ -1,5 +1,7 @@
 public enum MessageType {
     SHUTDOWN,
     NORMAL,
-    BCAST
+    BCAST,
+    HOST_ON,
+    CONNECT_TO
 }
