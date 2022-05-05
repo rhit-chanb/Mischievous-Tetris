@@ -3,5 +3,6 @@ public enum MessageType {
     NORMAL,
     BCAST,
     HOST_ON,
-    CONNECT_TO
+    CONNECT_TO,
+    TETRIS_EVENT
 }

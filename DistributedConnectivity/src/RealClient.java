@@ -14,6 +14,8 @@ public class RealClient {
     ServerSocket psuedoServerSocket; // socket that this client is exposing for connections by other peers
     boolean active; // currently unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
     int nextConnectionID; // "auto" incrementing id to give to peers in order of their connection (TODO: relative numbering might bite us later, could use absolute numbering given by the matchmaking server, or alternatively something like GUIDs)
+    Tetris underlying;
+
 
     public RealClient(){
         connections = new ArrayList<>();
@@ -44,6 +46,10 @@ public class RealClient {
             String joinAddr = argList[1];
             int joinPort = Integer.parseInt(argList[2]);
             this.joinPeer(joinAddr, joinPort);
+        } else if(message.startsWith(MessageType.NORMAL.toString())){
+            // forward to underlying Tetris object (if it exists)
+            String toForward = message.substring(7); // truncate off NORMAL header, Tetris shouldn't care about that?
+
         }
     }
     // join existing peers after connected to Matchmaker and given the list of peers to connect to
@@ -64,6 +70,21 @@ public class RealClient {
         }
     }
 
+    public void broadcast(MessageType type, String message){
+        for(Transceiver t : connections){
+            t.send(type, message);
+        }
+    }
+    // creates an underlying Tetris game and passes a reference to this class for its use
+    public void startGame(){
+        // only initialize if a game is not already running
+        if(this.underlying == null){
+            this.underlying = new Tetris();
+            underlying.bindToClient(this);
+            TetrisThread tetoThread = new TetrisThread(underlying);
+            new Thread(tetoThread).start();
+        }
+    }
 
     static class ConnectionThread implements Runnable {
         RealClient client;
@@ -173,8 +194,10 @@ public class RealClient {
                     } //TODO: perhaps abstract this duplicated for loop into a method of RealClient, or maybe somewhere else
                     tr.close();
                     break;
-                } else {
-
+                } else if(toSend.equalsIgnoreCase("/start")){
+                    client.startGame();
+                }
+                else {
                     System.out.println("Sending string: " + toSend);
                     tr.send(MessageType.NORMAL, toSend);
                     // another simple broadcast everything (temporary)
