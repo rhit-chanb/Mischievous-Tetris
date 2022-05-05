@@ -11,26 +11,28 @@ import java.util.Scanner;
 public class RealClient {
 
     ArrayList<Transceiver> connections;
-    ServerSocket psuedoServerSocket;
-    boolean active;
-    int nextConnectionID;
+    ServerSocket psuedoServerSocket; // socket that this client is exposing for connections by other peers
+    boolean active; // currently unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
+    int nextConnectionID; // "auto" incrementing id to give to peers in order of their connection (TODO: relative numbering might bite us later, could use absolute numbering given by the matchmaking server, or alternatively something like GUIDs)
 
     public RealClient(){
         connections = new ArrayList<>();
         active = true;
         nextConnectionID = 0;
     }
+    // host on addr and port based on whatever Matchmaker sent you
     public void startHosting(String addr, int port){
         System.out.println("Peer is starting hosting on ip " + addr + ", port " + port);
         // handle server socket and connection thread starting
         try {
             psuedoServerSocket = new ServerSocket(port, 50, Inet4Address.getByName(addr));
             ConnectionThread connThread = new ConnectionThread(this);
-            new Thread(connThread).start();
+            new Thread(connThread).start(); // see thread for all connection logic
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    // TODO: overload the crap out of this, probably the only method we care about really
     public void handleMessage(String message, int from){
         System.out.println("Received Message: " + message);
         String[] argList = message.split(" "); // assume all messages are delimited with spaces
@@ -44,6 +46,7 @@ public class RealClient {
             this.joinPeer(joinAddr, joinPort);
         }
     }
+    // join existing peers after connected to Matchmaker and given the list of peers to connect to
     public void joinPeer(String connectAddr, int connectPort){
         try {
             Socket clientSocket = new Socket(connectAddr, connectPort);
@@ -72,11 +75,11 @@ public class RealClient {
         public void run() {
             while(true){
                 try {
-                    Socket pseudoClientSocket = this.client.psuedoServerSocket.accept();
+                    Socket pseudoClientSocket = this.client.psuedoServerSocket.accept(); // accept connection from opposing peer
                     System.out.println("Peer received connection request from " + pseudoClientSocket.getInetAddress().toString().substring(1) + " at port " + pseudoClientSocket.getPort());
                     OutputStream outStream = pseudoClientSocket.getOutputStream();
-                    InputStream inStream = pseudoClientSocket.getInputStream();
-                    Transceiver tr = new Transceiver(this.client.nextConnectionID, inStream, outStream);
+                    InputStream inStream = pseudoClientSocket.getInputStream(); // grab streams
+                    Transceiver tr = new Transceiver(this.client.nextConnectionID, inStream, outStream); // shiny stream handler, again
 
                     // pass the completed Transceiver object over to the client's array
                     this.client.connections.add(tr);
@@ -85,6 +88,8 @@ public class RealClient {
                     this.client.nextConnectionID++; // increment counter of connections to this client for next connection's id
 
                 } catch (SocketException e){
+                    // "workaround" for when a client's sockets get closed but they're still trying to accept connections
+                    // basically a force close
                     if(e.getMessage().equals("socket closed")){
                         System.out.println("Detected closed socket, stopping connection thread");
                         break;
@@ -113,12 +118,12 @@ public class RealClient {
         public void run() {
             while(!tr.isClosed){
                 String message = tr.receive();
-                this.client.handleMessage(message, tr.contactID);
+                this.client.handleMessage(message, tr.contactID); // adding source ID, but not doing anything with it for now
             }
             System.out.println("Detected dead Transceiver...");
             System.out.println("Receiver thread closing...");
             System.out.println("Removing Transceiver from connections array");
-            this.client.connections.remove(tr);
+            this.client.connections.remove(tr); // when aforementioned boolean in tr is read as true, remove it from arraylist
             try {
                 this.pseudoClientSocket.close(); //properly take care of the loose socket
             } catch (IOException e) {
@@ -128,6 +133,7 @@ public class RealClient {
     }
 
     public static void main(String args[]) {
+        // args = the port and address of the matchmaking server
         if (args.length != 4) {
             System.out.println("usage: -port [portNumber] -addr [ipAddress] ");
             return;
@@ -141,26 +147,29 @@ public class RealClient {
 
 
         try {
-            Socket clientSocket = new Socket(address, port);
+            Socket clientSocket = new Socket(address, port); // connect to Matchmaker
             OutputStream outStream = clientSocket.getOutputStream();
             InputStream inStream = clientSocket.getInputStream();
 
 
-            Transceiver tr = new Transceiver(-1, inStream, outStream); // matchmaker gets a special value of -1 for it's ID
+            Transceiver tr = new Transceiver(-1, inStream, outStream); // Matchmaker gets a special value of -1 for it's ID
             Scanner scanner = new Scanner(System.in);
 
             Thread recvThread = new Thread(new ReceiverThread(tr, client, clientSocket));
             recvThread.start();
+
+            // theoretically speaking we can technically treat the matchmaker just the same as any other peer
+            // double edged sword, bad peers could try to force you to do bad CONNECT_TO and HOST_ON commands that make you crash :(
             while (true) {
                 System.out.print(">");
                 String toSend = scanner.nextLine();
                 if(toSend.equalsIgnoreCase("exit")){
-                    System.out.println("Exiting and signaling to close Transceiver objects");
+                    System.out.println("Exiting and signaling to close Transceiver objects"); // SCREAM OF DEATH
                     tr.send(MessageType.SHUTDOWN, " shut");
                     // simple broadcast everything (permanent)
                     for(Transceiver t : client.connections){
                         t.send(MessageType.SHUTDOWN, "shut");
-                    }
+                    } //TODO: perhaps abstract this duplicated for loop into a method of RealClient, or maybe somewhere else
                     tr.close();
                     break;
                 } else {

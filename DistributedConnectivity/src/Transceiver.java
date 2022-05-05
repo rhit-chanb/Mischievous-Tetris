@@ -6,8 +6,6 @@ public class Transceiver {
     public PrintWriter out;
     public boolean isClosed;
 
-
-
     public Transceiver(int contactID, InputStream in, OutputStream out) {
         this.contactID = contactID;
         this.in = new BufferedReader(new InputStreamReader(in));
@@ -26,7 +24,7 @@ public class Transceiver {
             //System.out.println("Transceiver received message: " + message);
             if(message == null || message.startsWith(MessageType.SHUTDOWN + " ")){
                 System.out.println("Received shutdown message, contact is exiting...");
-                this.close();
+                this.close(); // mark Transceiver as closed, this propagates because other logic looks at this boolean
                 return MessageType.SHUTDOWN.toString();
             } else {
                 return message;
