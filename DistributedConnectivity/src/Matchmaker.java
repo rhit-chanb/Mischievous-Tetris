@@ -17,14 +17,24 @@ public class Matchmaker {
 
     public static void main(String args[]) {
 
+        // args = the port and address of what the matchmaking server to host on
+        if (args.length != 4) {
+            System.out.println("usage: -port [portNumber] -addr [ipAddress] ");
+            return;
+        }
+        for (String s : args) {
+            System.out.println(s);
+        }
+        int port = Integer.parseInt(args[1]);
+        String address = args[3];
 
         ArrayList<Peer> peers = new ArrayList<>();
 
         new Thread(new PollPeers(peers)).start();
         int connectionNumber = 0;
         try {
-            ServerSocket serverSocket = new ServerSocket(5000, 50, Inet4Address.getByName("192.168.137.1"));
-            System.out.println("Matchmaker listening on 192.168.137.1, port 5000"); // TODO: move this hardcoding to a config or smth
+            ServerSocket serverSocket = new ServerSocket(port, 50, Inet4Address.getByName(address));
+            System.out.println("Matchmaker listening on " + address + ", port " + port); // added to run configs for now
             while(true){
 
                 Socket clientSocket = serverSocket.accept();
