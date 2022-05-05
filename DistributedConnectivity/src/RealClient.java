@@ -160,6 +160,7 @@ public class RealClient {
 
             // theoretically speaking we can technically treat the matchmaker just the same as any other peer
             // double edged sword, bad peers could try to force you to do bad CONNECT_TO and HOST_ON commands that make you crash :(
+            // TODO: theoretically after the matchmaking server sends the NORMAL done message the client could stop listening to CONNECT_TO and HOST_ON commands
             while (true) {
                 System.out.print(">");
                 String toSend = scanner.nextLine();
