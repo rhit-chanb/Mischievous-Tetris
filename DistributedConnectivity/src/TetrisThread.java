@@ -13,7 +13,9 @@ public class TetrisThread implements Runnable{
     public void run() {
         JFrame f = new JFrame("Tetris");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setSize(12 * 26 + 10, 26 * 23 + 25);
+        int width = 12*26+10;
+        int height = 26*23+25;
+        f.setSize(width*3, height);
         f.setVisible(true);
 
         game.init();

@@ -37,6 +37,9 @@ public class RealClient {
     // TODO: overload the crap out of this, probably the only method we care about really
     public void handleMessage(String message, int from){
         System.out.println("Received Message: " + message);
+        if(message == null){
+            return;
+        }
         String[] argList = message.split(" "); // assume all messages are delimited with spaces
         if(message.startsWith(MessageType.HOST_ON.toString())){
             String hostingAddr = argList[1];

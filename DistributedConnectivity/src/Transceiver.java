@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.SocketException;
 
 public class Transceiver {
     public int contactID;
@@ -29,7 +30,18 @@ public class Transceiver {
             } else {
                 return message;
             }
-        } catch (IOException e) {
+        }catch (SocketException e){
+            // "workaround" for when a client's sockets get closed but they're still trying to accept connections
+            // basically a force close
+            if(e.getMessage().equalsIgnoreCase("connection reset")){
+                System.out.println("Detected connection reset, shutting down Transceiver object");
+                this.close();
+            } else {
+                e.printStackTrace();
+            }
+
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;
