@@ -6,6 +6,24 @@ import java.util.Scanner;
 
 public class BarebonesClient {
 
+    static class ReceiverThread implements Runnable{
+        Transceiver tr;
+
+        public ReceiverThread(Transceiver tr) {
+            this.tr = tr;
+        }
+
+        @Override
+        public void run() {
+            while(!tr.isClosed){
+                String message = tr.receive();
+                System.out.println(message);
+            }
+            System.out.println("Detected dead Transceiver...");
+            System.out.println("Receiver thread closing...");
+            System.out.println("Removing Transceiver from connections array");
+        }
+    }
 
     public static void main(String args[]) {
         if (args.length != 4) {
@@ -27,16 +45,17 @@ public class BarebonesClient {
 
             Transceiver tr = new Transceiver(0, inStream, outStream);
             Scanner scanner = new Scanner(System.in);
+
+            ReceiverThread receiverThread = new ReceiverThread(tr);
+
+            new Thread(receiverThread).start();
+
             while (true) {
                 switch (scanner.nextLine()) {
                     case "send":
                         System.out.println("String to send: ");
                         String toSend = scanner.nextLine();
                         tr.send(MessageType.NORMAL, toSend);
-                        break;
-                    case "recv":
-                        System.out.println("Waiting for server response");
-                        System.out.println("String from server: " + tr.receive());
                         break;
                     case "exit":
                         System.out.println("Exiting and signaling to close Transceiver objects");
@@ -52,6 +71,8 @@ public class BarebonesClient {
             e.printStackTrace();
         }
     }
+
+
 
 
 }
