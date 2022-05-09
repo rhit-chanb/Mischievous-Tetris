@@ -52,7 +52,9 @@ public class RealClient {
         } else if(message.startsWith(MessageType.NORMAL.toString())){
             // forward to underlying Tetris object (if it exists)
             String toForward = message.substring(7); // truncate off NORMAL header, Tetris shouldn't care about that?
-
+            if(this.underlying != null){
+                this.underlying.handleMessageEvent(toForward);
+            }
         }
     }
     // join existing peers after connected to Matchmaker and given the list of peers to connect to
