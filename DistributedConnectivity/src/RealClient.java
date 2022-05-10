@@ -13,18 +13,16 @@ public class RealClient {
     ArrayList<Transceiver> connections;
     ServerSocket psuedoServerSocket; // socket that this client is exposing for connections by other peers
     boolean active; // currently unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
-    int nextConnectionID; // "auto" incrementing id to give to peers in order of their connection (TODO: relative numbering might bite us later, could use absolute numbering given by the matchmaking server, or alternatively something like GUIDs)
     Tetris underlying;
-
+    int processID; // the id of this peer
 
     public RealClient(){
         connections = new ArrayList<>();
         active = true;
-        nextConnectionID = 0;
     }
     // host on addr and port based on whatever Matchmaker sent you
     public void startHosting(String addr, int port){
-        System.out.println("Peer is starting hosting on ip " + addr + ", port " + port);
+        System.out.println("Peer (Process ID: " + processID + ") is starting hosting on ip " + addr + ", port " + port);
         // handle server socket and connection thread starting
         try {
             psuedoServerSocket = new ServerSocket(port, 50, Inet4Address.getByName(addr));
@@ -44,12 +42,18 @@ public class RealClient {
         if(message.startsWith(MessageType.HOST_ON.toString())){
             String hostingAddr = argList[1];
             int hostingPort = Integer.parseInt(argList[2]);
+            this.processID = Integer.parseInt(argList[3]);
             this.startHosting(hostingAddr, hostingPort);
         } else if(message.startsWith(MessageType.CONNECT_TO.toString())){
             String joinAddr = argList[1];
             int joinPort = Integer.parseInt(argList[2]);
-            this.joinPeer(joinAddr, joinPort);
-        } else if(message.startsWith(MessageType.NORMAL.toString())){
+            int peerProcessID = Integer.parseInt(argList[3]);
+
+            this.joinPeer(joinAddr, joinPort, peerProcessID);
+        } else if(message.startsWith(MessageType.SET_PROC_ID.toString())){
+            int incomingID = Integer.parseInt(argList[1]);
+            handleProcIDSet(incomingID);
+        }else if(message.startsWith(MessageType.NORMAL.toString())){
             // forward to underlying Tetris object (if it exists)
             String toForward = message.substring(7); // truncate off NORMAL header, Tetris shouldn't care about that?
             if(this.underlying != null){
@@ -57,16 +61,28 @@ public class RealClient {
             }
         }
     }
+
+    private void handleProcIDSet(int incomingID) {
+        for(Transceiver t : connections){
+            if(t.contactID == -1){
+                t.contactID = incomingID;
+                break;
+            }
+        }
+    }
+
     // join existing peers after connected to Matchmaker and given the list of peers to connect to
-    public void joinPeer(String connectAddr, int connectPort){
+    public void joinPeer(String connectAddr, int connectPort, int peerProcessID){
         try {
             Socket clientSocket = new Socket(connectAddr, connectPort);
             OutputStream outStream = clientSocket.getOutputStream();
             InputStream inStream = clientSocket.getInputStream();
 
-            Transceiver tr = new Transceiver(0, inStream, outStream);
+            Transceiver tr = new Transceiver(peerProcessID, inStream, outStream);
 
             this.connections.add(tr);
+
+            tr.send(MessageType.SET_PROC_ID, new Integer(this.processID).toString());
 
             Thread recvThread = new Thread(new ReceiverThread(tr, this, clientSocket));
             recvThread.start();
@@ -105,13 +121,12 @@ public class RealClient {
                     System.out.println("Peer received connection request from " + pseudoClientSocket.getInetAddress().toString().substring(1) + " at port " + pseudoClientSocket.getPort());
                     OutputStream outStream = pseudoClientSocket.getOutputStream();
                     InputStream inStream = pseudoClientSocket.getInputStream(); // grab streams
-                    Transceiver tr = new Transceiver(this.client.nextConnectionID, inStream, outStream); // shiny stream handler, again
+                    Transceiver tr = new Transceiver(-1, inStream, outStream); // shiny stream handler, again TODO: REASSIGN
 
                     // pass the completed Transceiver object over to the client's array
                     this.client.connections.add(tr);
                     ReceiverThread recvThread = new ReceiverThread(tr, client, pseudoClientSocket);
                     new Thread(recvThread).start(); //start listening to added transceiver
-                    this.client.nextConnectionID++; // increment counter of connections to this client for next connection's id
 
                 } catch (SocketException e){
                     // "workaround" for when a client's sockets get closed but they're still trying to accept connections
@@ -201,6 +216,15 @@ public class RealClient {
                     break;
                 } else if(toSend.equalsIgnoreCase("/start")){
                     client.startGame();
+                } else if(toSend.equalsIgnoreCase("/list") || toSend.equalsIgnoreCase("/ls")){
+                    // list the peers we're currently connected to
+                    System.out.println("Currently connected to: ");
+                    if(client.connections.isEmpty()){
+                        System.out.println("(none currently connected)");
+                    }
+                    for(Transceiver t: client.connections){
+                        System.out.println("Process #" + t.contactID);
+                    }
                 }
                 else {
                     System.out.println("Sending string: " + toSend);

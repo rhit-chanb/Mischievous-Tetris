@@ -9,7 +9,7 @@ public class Matchmaker {
 
     public static void invitePeerToGroup(Peer newPeer, ArrayList<Peer> peers) {
         for (Peer p : peers) {
-            newPeer.send(MessageType.CONNECT_TO,p.addr + " " + p.port); // send special special connection message to the joining peer
+            newPeer.send(MessageType.CONNECT_TO,p.addr + " " + p.port + " " + p.processID); // send special special connection message to the joining peer
         }
         peers.add(newPeer); // add new peer after giving new peer list of existing peers
         newPeer.send("done"); // tell peer that's all of the connections, not sure if necessary (it isn't)
@@ -38,7 +38,7 @@ public class Matchmaker {
             while(true){
 
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("Connection request received from " + clientSocket.getInetAddress().toString().substring(1) + " at port " + clientSocket.getPort());
+                System.out.println("Connection request received from " + clientSocket.getInetAddress().toString().substring(1) + " at port " + clientSocket.getPort() + " (process number: " + connectionNumber + ")");
                 OutputStream outStream = clientSocket.getOutputStream();
                 InputStream inStream = clientSocket.getInputStream();
                 Transceiver tr = new Transceiver(connectionNumber, inStream, outStream); // shiny stream handler
@@ -46,12 +46,12 @@ public class Matchmaker {
                 String peerAddress = clientSocket.getInetAddress().toString().substring(1);
                 int peerPort = clientSocket.getPort();
 
-                Peer p = new Peer(tr, peerAddress, peerPort); // generate new peer object to store in array
+                Peer p = new Peer(tr, peerAddress, peerPort, connectionNumber); // generate new peer object to store in array
 
-                String connectionRequestCommand = peerAddress + " " + peerPort; // should be "<ip address with '/' trimmed off> <port number>"
+                String connectionRequestCommand = peerAddress + " " + peerPort + " " + connectionNumber; // should be "<ip address with '/' trimmed off> <port number>"
 
                 p.send(MessageType.HOST_ON, connectionRequestCommand); // tell newly joined peer to host on ip + port that it joined the matchmaker with (it doesn't know by default)
-
+                connectionNumber++;
                 invitePeerToGroup(p, peers); // give peer list of currently active peers
 
                 PeerLeaveThread pLeave = new PeerLeaveThread(p, peers); // have the Matchmaker eavesdrop on broadcasts and take off peers from the connected peers array when they send SHUTDOWN messages
@@ -66,11 +66,13 @@ public class Matchmaker {
         Transceiver tr;
         String addr;
         int port;
+        int processID;
 
-        public Peer(Transceiver tr, String addr, int port) {
+        public Peer(Transceiver tr, String addr, int port, int processID) {
             this.tr = tr;
             this.addr = addr;
             this.port = port;
+            this.processID = processID;
         }
 
         public boolean hasLeft() {
@@ -87,7 +89,7 @@ public class Matchmaker {
         }
         // for debugging
         public String toString() {
-            return "Address: " + addr + ", Port: " + port;
+            return "ID: " + processID + ", Address: " + addr + ", Port: " + port;
         }
 
     }
