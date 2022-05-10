@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -12,7 +13,7 @@ import javax.swing.JPanel;
 public class Tetris extends JPanel {
 
     private static final long serialVersionUID = -8715353373678321308L;
-
+//    private static final int height =
     private final Point[][][] Tetrominos = {
             // I-Piece
             {
@@ -81,6 +82,8 @@ public class Tetris extends JPanel {
             new Color(175, 41, 138), // pink
             new Color(215, 15, 55) // red
     };
+    public static HashMap<Color,String> ColorToChar = new HashMap<>();
+    public static HashMap<String,Color> CharToColor = new HashMap<>();
 
 
     private Point pieceOrigin;
@@ -113,8 +116,51 @@ public class Tetris extends JPanel {
         }
     }
 
+    public String BoardToString(Color[][] board){
+        StringBuilder result = new StringBuilder();
+        for (Color[] value : board) {
+            for (int n = 0; n < value.length; n++) {
+                String val = ColorToChar.get(value[n]);
+                result.append(val);
+            }
+            result.append('S');
+        }
+        return result.toString();
+    }
+    public Color[][] StringToBoard(String s){
+        Color[][] result = new Color[12][24];
+        String[] rows = s.split("S");
+        int r = 0;
+        for(String row : rows){
+            for(int i = 0; i < result[r].length; i++){
+                result[r][i] = CharToColor.get(row.substring(i,i+1));
+            }
+            r++;
+        }
+        return result;
+    }
     // Creates a border around the well and initializes the dropping piece
     public void init() {
+        ColorToChar.put(tetrominoColors[0],"c");
+        ColorToChar.put(tetrominoColors[1],"o");
+        ColorToChar.put(tetrominoColors[2],"b");
+        ColorToChar.put(tetrominoColors[3],"y");
+        ColorToChar.put(tetrominoColors[4],"g");
+        ColorToChar.put(tetrominoColors[5],"p");
+        ColorToChar.put(tetrominoColors[6],"r");
+        ColorToChar.put(Color.BLACK," ");
+        ColorToChar.put(Color.GRAY,"|");
+
+
+        CharToColor.put("c",tetrominoColors[0]);
+        CharToColor.put("o",tetrominoColors[1]);
+        CharToColor.put("b",tetrominoColors[2]);
+        CharToColor.put("y",tetrominoColors[3]);
+        CharToColor.put("g",tetrominoColors[4]);
+        CharToColor.put("p",tetrominoColors[5]);
+        CharToColor.put("r",tetrominoColors[6]);
+        CharToColor.put(" ",Color.BLACK);
+        CharToColor.put("|",Color.GRAY);
         well = new Color[12][24];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {

@@ -160,7 +160,7 @@ public class RealClient {
 
     public static void main(String args[]) {
         // args = the port and address of the matchmaking server
-        if (args.length != 4) {
+        if(args.length != 4) {
             System.out.println("usage: -port [portNumber] -addr [ipAddress] ");
             return;
         }
