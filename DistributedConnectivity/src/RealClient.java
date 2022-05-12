@@ -34,7 +34,7 @@ public class RealClient {
     }
     // TODO: overload the crap out of this, probably the only method we care about really
     public void handleMessage(String message, int from){
-        System.out.println("Received Message: " + message);
+        System.out.println("Received Message: " + message + " from process: " + from);
         if(message == null){
             return;
         }
