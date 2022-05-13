@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Matchmaker" type="Application" factoryName="Application" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="Matchmaker" />
+    <module name="TetrisClient.main" />
+    <option name="PROGRAM_PARAMETERS" value="-port 26000 -addr localhost" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

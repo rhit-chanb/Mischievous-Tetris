@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="RealClient" type="Application" factoryName="Application" singleton="false" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="RealClient" />
+    <module name="TetrisClient.main" />
+    <option name="PROGRAM_PARAMETERS" value="-port 26000 -addr localhost" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
