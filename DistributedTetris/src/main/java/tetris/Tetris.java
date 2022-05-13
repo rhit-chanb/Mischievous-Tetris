@@ -10,6 +10,7 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,28 +19,17 @@ import java.util.Map;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
+    @Serial
     private static final long serialVersionUID = -8715353373678321308L;
-    public static HashMap<Color, String> ColorToChar = new HashMap<>();
-    public static HashMap<String, Color> CharToColor = new HashMap<>();
-    //    private static final int height =
-    private final Color[] tetrominoColors = {
-            new Color(15, 155, 215), // cyan
-            new Color(227, 91, 2), // orange
-            new Color(33, 65, 198), // blue
-            new Color(227, 159, 2), // yellow
-            new Color(89, 177, 1), // green
-            new Color(175, 41, 138), // pink
-            new Color(215, 15, 55) // red
-    };
     private final int softLockConstant = 2;
+    private final List<Tetromino> nextPieces = new ArrayList<>();
+    private final Map<Integer, TColor[][]> opponentBoards = new HashMap<>();
     public RealClient client;
     private Point pieceOrigin;
     private Tetromino currentPiece;
     private Rotation rotation;
-    private List<Tetromino> nextPieces = new ArrayList<>();
     private long score;
     private TColor[][] well;
-    private Map<Integer, Color[][]> opponentBoards = new HashMap<>();
     private int softLock = softLockConstant;
 
     public Tetris() {
@@ -90,6 +80,7 @@ public class Tetris extends JPanel {
                     Thread.sleep(1000);
                     game.dropDown();
                 } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }).start();
@@ -125,7 +116,7 @@ public class Tetris extends JPanel {
                 if (cell == null) {
                     System.out.println("Cell was null?");
                 } else {
-                    result.append(cell.toString());
+                    result.append(cell);
                 }
             }
             result.append(BOARD_ROW_SEPARATOR);
@@ -133,13 +124,13 @@ public class Tetris extends JPanel {
         return result.toString();
     }
 
-    public Color[][] StringToBoard(String s) {
-        Color[][] result = new Color[12][24];
+    public TColor[][] StringToBoard(String s) {
+        TColor[][] result = new TColor[12][24];
         String[] rows = s.split(BOARD_ROW_SEPARATOR);
         int r = 0;
         for (String row : rows) {
             for (int i = 0; i < result[r].length; i++) {
-                result[r][i] = CharToColor.get(row.substring(i, i + 1));
+                result[r][i] = TColor.fromString(row.substring(i, i + 1));
             }
             r++;
         }
@@ -239,7 +230,7 @@ public class Tetris extends JPanel {
     // collision detection.
     public void fixToWell() {
         for (Point p : currentPiece.inRotation(rotation)) {
-            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.color;
+            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
         }
         clearRows();
         newPiece();
@@ -338,7 +329,7 @@ public class Tetris extends JPanel {
                     25, 25);
         }
 
-        g.setColor(tetrominoColors[currentPiece.legacyInt]);
+        g.setColor(currentPiece.tcolor.color);
         for (Point p : currentPiece.inRotation(rotation)) {
 
             g.fillRect((p.x + pieceOrigin.x) * 26,
@@ -358,11 +349,11 @@ public class Tetris extends JPanel {
             }
         }
         int offset = 1;
-        for (Color[][] board : opponentBoards.values()) {
+        for (TColor[][] board : opponentBoards.values()) {
             g.fillRect(offset * (312), 0, 26 * 12, 26 * 23);
             for (int i = 0; i < 12; i++) {
                 for (int j = 0; j < 23; j++) {
-                    g.setColor(board[i][j]);
+                    g.setColor(board[i][j].color);
                     g.fillRect((26 * i) + offset * (312), 26 * j, 25, 25);
                 }
             }
