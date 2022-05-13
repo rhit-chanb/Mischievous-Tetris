@@ -1,6 +1,11 @@
 package networking;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.SocketException;
 
 public class Transceiver {
@@ -16,8 +21,8 @@ public class Transceiver {
         isClosed = false;
     }
 
-    public String receive(){
-        if(isClosed){
+    public String receive() {
+        if (isClosed) {
             //System.out.println("Streams closed, cannot recv");
             return null;
         }
@@ -25,32 +30,27 @@ public class Transceiver {
         try {
             message = in.readLine();
             //System.out.println("Transceiver received message: " + message);
-            if(message == null || message.startsWith(MessageType.SHUTDOWN + " ")){
+            if (message == null || message.startsWith(MessageType.SHUTDOWN + " ")) {
                 System.out.println("Received shutdown message, contact is exiting...");
                 this.close(); // mark Transceiver as closed, this propagates because other logic looks at this boolean
                 return MessageType.SHUTDOWN.toString();
             } else {
                 return message;
             }
-        }catch (SocketException e){
+        } catch (SocketException e) {
             // "workaround" for when a client's sockets get closed but they're still trying to accept connections
             // basically a force close
-            if(e.getMessage().equalsIgnoreCase("connection reset")){
-                System.out.println("Detected connection reset, shutting down Transceiver object");
-                this.close();
-            } else {
-                e.printStackTrace();
-            }
-
-        }
-        catch (IOException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Detected connection reset, shutting down Transceiver object");
+            this.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public void send(MessageType type, String message){
-        if(isClosed){
+    public void send(MessageType type, String message) {
+        if (isClosed) {
             //System.out.println("Streams closed, cannot send");
             return;
         }
@@ -61,7 +61,7 @@ public class Transceiver {
         out.println(type + " " + message);
     }
 
-    public void close(){
+    public void close() {
         try {
             in.close();
             out.close();
