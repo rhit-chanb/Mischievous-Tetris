@@ -137,6 +137,11 @@ public class RealClient {
             return;
         }
         String[] argList = message.split(" "); // assume all messages are delimited with spaces
+        if(argList[0].equals(MessageType.UPDATE_BOARD_STATE.toString())){
+            if (this.underlying != null) {
+                this.underlying.handleRecvBoard(argList[1],from);
+            }
+        }
         if (message.startsWith(MessageType.HOST_ON.toString())) {
             String hostingAddr = argList[1];
             int hostingPort = Integer.parseInt(argList[2]);
@@ -151,7 +156,9 @@ public class RealClient {
         } else if (message.startsWith(MessageType.SET_PROC_ID.toString())) {
             int incomingID = Integer.parseInt(argList[1]);
             handleProcIDSet(incomingID);
-        } else if (message.startsWith(MessageType.NORMAL.toString())) {
+        }
+
+        else if (message.startsWith(MessageType.NORMAL.toString())) {
             // forward to underlying Tetris object (if it exists)
             String toForward = message.substring(7); // truncate off NORMAL header, Tetris shouldn't care about that?
             if (this.underlying != null) {

@@ -110,6 +110,12 @@ public class Tetris extends JPanel {
         System.out.println("TetrisGame received message from client layer: " + message);
         // TODO: expand to do cooler things to the tetris game instead of just printing to console
     }
+
+    public void handleRecvBoard(String board, int fromProcess){
+        System.out.println("Received a board update from " + fromProcess);
+        opponentBoard.put(fromProcess, StringToBoard(board));
+    }
+
     public void broadcastMessage(String message){
         // more bulletproofing just in case the Tetris game somehow isn't connected to a client?
         if(this.client != null){
@@ -122,6 +128,9 @@ public class Tetris extends JPanel {
         for (Color[] value : board) {
             for (int n = 0; n < value.length; n++) {
                 String val = ColorToChar.get(value[n]);
+                if(val == null){
+                    System.out.println(value[n] + " gave null");
+                }
                 result.append(val);
             }
             result.append('S');
@@ -149,8 +158,9 @@ public class Tetris extends JPanel {
         ColorToChar.put(tetrominoColors[4],"g");
         ColorToChar.put(tetrominoColors[5],"p");
         ColorToChar.put(tetrominoColors[6],"r");
-        ColorToChar.put(Color.BLACK," ");
+        ColorToChar.put(Color.BLACK,"*");
         ColorToChar.put(Color.GRAY,"|");
+        ColorToChar.put(null,"N");
 
 
         CharToColor.put("c",tetrominoColors[0]);
@@ -160,8 +170,9 @@ public class Tetris extends JPanel {
         CharToColor.put("g",tetrominoColors[4]);
         CharToColor.put("p",tetrominoColors[5]);
         CharToColor.put("r",tetrominoColors[6]);
-        CharToColor.put(" ",Color.BLACK);
+        CharToColor.put("*",Color.BLACK);
         CharToColor.put("|",Color.GRAY);
+        CharToColor.put("N",null);
         well = new Color[12][24];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
@@ -360,6 +371,17 @@ public class Tetris extends JPanel {
                 g.fillRect(26 * i, 26 * j, 25, 25);
             }
         }
+        int offset = 1;
+        for(Color[][] board : opponentBoard.values()){
+            g.fillRect(offset*(312), 0, 26 * 12, 26 * 23);
+            for (int i = 0; i < 12; i++) {
+                for (int j = 0; j < 23; j++) {
+                    g.setColor(board[i][j]);
+                    g.fillRect((26 * i) + offset*(312), 26 * j, 25, 25);
+                }
+            }
+            offset++;
+        }
 
         // Display the score
         g.setColor(Color.WHITE);
@@ -367,10 +389,6 @@ public class Tetris extends JPanel {
 
         // Draw the currently falling piece
         drawPiece(g);
-    }
-
-    public void handleRecvBoard(String board, int fromProcess){
-        opponentBoard.put(fromProcess, StringToBoard(board));
     }
 
     public static void main(String[] args) {
