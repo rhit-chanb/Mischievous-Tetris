@@ -114,7 +114,9 @@ public class Tetris extends JPanel {
         for (TColor[] row : board) { // TODO name - might be a col and not a row?
             for (TColor cell : row) {
                 if (cell == null) {
-                    System.out.println("Cell was null?");
+                    // TODO find out why there are null cells (is that okay?)
+//                    System.out.println("Cell was null?");
+                    result.append(TColor.UNKNOWN.toString());
                 } else {
                     result.append(cell);
                 }
