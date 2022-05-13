@@ -243,7 +243,12 @@ public class Tetris extends JPanel {
         }
         clearRows();
         newPiece();
-        if(client != null) {client.broadcast(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));}
+        // TODO probably abstract broadcasts elsewhere so we don't need to null check
+        //  or maybe make a fake client
+        //  client was null (maybe testing offline?)
+        if (client != null) {
+            client.broadcast(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
+        }
     }
 
     public void dropToBottom() {
