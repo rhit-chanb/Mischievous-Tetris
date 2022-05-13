@@ -1,3 +1,5 @@
+import javax.swing.JFrame;
+import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
@@ -6,14 +8,15 @@ import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import java.util.List;
+import java.util.Map;
 
 public class Tetris extends JPanel {
 
     private static final long serialVersionUID = -8715353373678321308L;
-//    private static final int height =
+    public static HashMap<Color, String> ColorToChar = new HashMap<>();
+    public static HashMap<String, Color> CharToColor = new HashMap<>();
+    //    private static final int height =
     private final Point[][][] Tetrominos = {
             // I-Piece
             {
@@ -72,7 +75,6 @@ public class Tetris extends JPanel {
                     {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}
             }
     };
-
     private final Color[] tetrominoColors = {
             new Color(15, 155, 215), // cyan
             new Color(227, 91, 2), // orange
@@ -82,53 +84,96 @@ public class Tetris extends JPanel {
             new Color(175, 41, 138), // pink
             new Color(215, 15, 55) // red
     };
-    public static HashMap<Color,String> ColorToChar = new HashMap<>();
-    public static HashMap<String,Color> CharToColor = new HashMap<>();
-
-
+    private final int softLockConstant = 2;
+    public RealClient client;
     private Point pieceOrigin;
     private int currentPiece;
     private int rotation;
     private ArrayList<Integer> nextPieces = new ArrayList<Integer>();
-
     private long score;
     private Color[][] well;
-    private HashMap<Integer, Color[][]> opponentBoard = new HashMap<>();
-    private final int softLockConstant = 2;
+    private Map<Integer, Color[][]> opponentBoards = new HashMap<>();
     private int softLock = softLockConstant;
 
-    public RealClient client;
-
-    public Tetris(){
+    public Tetris() {
 
     }
-    public void bindToClient(RealClient client){
+
+    public static void main(String[] args) {
+        JFrame f = new JFrame("Tetris");
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setSize(12 * 26 + 10, 26 * 23 + 25);
+        f.setVisible(true);
+
+        final Tetris game = new Tetris();
+        game.init();
+        f.add(game);
+
+        // Keyboard controls
+        f.addKeyListener(new KeyListener() {
+            public void keyTyped(KeyEvent e) {
+            }
+
+            public void keyPressed(KeyEvent e) {
+                // TODO: read these from a config file?
+                switch (e.getKeyCode()) {
+                    case KeyEvent.VK_J -> game.rotate(-1);
+                    case KeyEvent.VK_K -> game.rotate(+1);
+                    case KeyEvent.VK_L -> game.rotate(2);
+                    case KeyEvent.VK_A -> game.move(-1);
+                    case KeyEvent.VK_D -> game.move(+1);
+                    case KeyEvent.VK_S -> {
+                        game.dropDown();
+                        game.score += 1;
+                    }
+                    case KeyEvent.VK_SPACE -> game.dropToBottom();
+                    case KeyEvent.VK_R -> game.init();
+                }
+            }
+
+            public void keyReleased(KeyEvent e) {
+            }
+        });
+
+        // Make the falling piece drop every second
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                    game.dropDown();
+                } catch (InterruptedException e) {
+                }
+            }
+        }).start();
+    }
+
+    public void bindToClient(RealClient client) {
         this.client = client;
     }
 
-    public void handleMessageEvent(String message){
+    public void handleMessageEvent(String message) {
         System.out.println("TetrisGame received message from client layer: " + message);
         // TODO: expand to do cooler things to the tetris game instead of just printing to console
     }
 
-    public void handleRecvBoard(String board, int fromProcess){
+    public void handleRecvBoard(String board, int fromProcess) {
         System.out.println("Received a board update from " + fromProcess);
-        opponentBoard.put(fromProcess, StringToBoard(board));
+        opponentBoards.put(fromProcess, StringToBoard(board));
     }
 
-    public void broadcastMessage(String message){
+    public void broadcastMessage(String message) {
         // more bulletproofing just in case the Tetris game somehow isn't connected to a client?
-        if(this.client != null){
+        if (this.client != null) {
             this.client.broadcast(MessageType.TETRIS_EVENT, message);
         }
     }
 
-    public String BoardToString(Color[][] board){
+    public String BoardToString(Color[][] board) {
         StringBuilder result = new StringBuilder();
         for (Color[] value : board) {
             for (int n = 0; n < value.length; n++) {
                 String val = ColorToChar.get(value[n]);
-                if(val == null){
+                if (val == null) {
                     System.out.println(value[n] + " gave null");
                 }
                 result.append(val);
@@ -137,42 +182,44 @@ public class Tetris extends JPanel {
         }
         return result.toString();
     }
-    public Color[][] StringToBoard(String s){
+
+    public Color[][] StringToBoard(String s) {
         Color[][] result = new Color[12][24];
         String[] rows = s.split("S");
         int r = 0;
-        for(String row : rows){
-            for(int i = 0; i < result[r].length; i++){
-                result[r][i] = CharToColor.get(row.substring(i,i+1));
+        for (String row : rows) {
+            for (int i = 0; i < result[r].length; i++) {
+                result[r][i] = CharToColor.get(row.substring(i, i + 1));
             }
             r++;
         }
         return result;
     }
+
     // Creates a border around the well and initializes the dropping piece
     public void init() {
-        ColorToChar.put(tetrominoColors[0],"c");
-        ColorToChar.put(tetrominoColors[1],"o");
-        ColorToChar.put(tetrominoColors[2],"b");
-        ColorToChar.put(tetrominoColors[3],"y");
-        ColorToChar.put(tetrominoColors[4],"g");
-        ColorToChar.put(tetrominoColors[5],"p");
-        ColorToChar.put(tetrominoColors[6],"r");
-        ColorToChar.put(Color.BLACK,"*");
-        ColorToChar.put(Color.GRAY,"|");
-        ColorToChar.put(null,"N");
+        ColorToChar.put(tetrominoColors[0], "c");
+        ColorToChar.put(tetrominoColors[1], "o");
+        ColorToChar.put(tetrominoColors[2], "b");
+        ColorToChar.put(tetrominoColors[3], "y");
+        ColorToChar.put(tetrominoColors[4], "g");
+        ColorToChar.put(tetrominoColors[5], "p");
+        ColorToChar.put(tetrominoColors[6], "r");
+        ColorToChar.put(Color.BLACK, "*");
+        ColorToChar.put(Color.GRAY, "|");
+        ColorToChar.put(null, "N");
 
 
-        CharToColor.put("c",tetrominoColors[0]);
-        CharToColor.put("o",tetrominoColors[1]);
-        CharToColor.put("b",tetrominoColors[2]);
-        CharToColor.put("y",tetrominoColors[3]);
-        CharToColor.put("g",tetrominoColors[4]);
-        CharToColor.put("p",tetrominoColors[5]);
-        CharToColor.put("r",tetrominoColors[6]);
-        CharToColor.put("*",Color.BLACK);
-        CharToColor.put("|",Color.GRAY);
-        CharToColor.put("N",null);
+        CharToColor.put("c", tetrominoColors[0]);
+        CharToColor.put("o", tetrominoColors[1]);
+        CharToColor.put("b", tetrominoColors[2]);
+        CharToColor.put("y", tetrominoColors[3]);
+        CharToColor.put("g", tetrominoColors[4]);
+        CharToColor.put("p", tetrominoColors[5]);
+        CharToColor.put("r", tetrominoColors[6]);
+        CharToColor.put("*", Color.BLACK);
+        CharToColor.put("|", Color.GRAY);
+        CharToColor.put("N", null);
         well = new Color[12][24];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
@@ -199,6 +246,13 @@ public class Tetris extends JPanel {
         }
         currentPiece = nextPieces.get(0);
         nextPieces.remove(0);
+    }
+
+    public List<Tetromino> generateNewBag() {
+        List<Tetromino> bag = new ArrayList<>();
+        Collections.addAll(bag, Tetromino.I_PIECE, Tetromino.J_PIECE, Tetromino.L_PIECE, Tetromino.O_PIECE, Tetromino.S_PIECE, Tetromino.T_PIECE, Tetromino.Z_PIECE);
+        Collections.shuffle(bag);
+        return bag;
     }
 
     // Collision test for the dropping piece
@@ -372,12 +426,12 @@ public class Tetris extends JPanel {
             }
         }
         int offset = 1;
-        for(Color[][] board : opponentBoard.values()){
-            g.fillRect(offset*(312), 0, 26 * 12, 26 * 23);
+        for (Color[][] board : opponentBoards.values()) {
+            g.fillRect(offset * (312), 0, 26 * 12, 26 * 23);
             for (int i = 0; i < 12; i++) {
                 for (int j = 0; j < 23; j++) {
                     g.setColor(board[i][j]);
-                    g.fillRect((26 * i) + offset*(312), 26 * j, 25, 25);
+                    g.fillRect((26 * i) + offset * (312), 26 * j, 25, 25);
                 }
             }
             offset++;
@@ -389,71 +443,5 @@ public class Tetris extends JPanel {
 
         // Draw the currently falling piece
         drawPiece(g);
-    }
-
-    public static void main(String[] args) {
-        JFrame f = new JFrame("Tetris");
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setSize(12 * 26 + 10, 26 * 23 + 25);
-        f.setVisible(true);
-
-        final Tetris game = new Tetris();
-        game.init();
-        f.add(game);
-
-        // Keyboard controls
-        f.addKeyListener(new KeyListener() {
-            public void keyTyped(KeyEvent e) {
-            }
-
-            public void keyPressed(KeyEvent e) {
-                // TODO: read these from a config file?
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_J:
-                        game.rotate(-1);
-                        break;
-                    case KeyEvent.VK_K:
-                        game.rotate(+1);
-                        break;
-                    case KeyEvent.VK_L:
-                        game.rotate(2);
-                        break;
-                    case KeyEvent.VK_A:
-                        game.move(-1);
-                        break;
-                    case KeyEvent.VK_D:
-                        game.move(+1);
-                        break;
-                    case KeyEvent.VK_S:
-                        game.dropDown();
-                        game.score += 1;
-                        break;
-                    case KeyEvent.VK_SPACE:
-                        game.dropToBottom();
-                        break;
-
-                    case KeyEvent.VK_R:
-                        game.init();
-                        break;
-                }
-            }
-
-            public void keyReleased(KeyEvent e) {
-            }
-        });
-
-        // Make the falling piece drop every second
-        new Thread() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(1000);
-                        game.dropDown();
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
-        }.start();
     }
 }

@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -14,8 +15,8 @@ import java.util.function.Supplier;
 public class RealClient {
 
     ArrayList<Transceiver> connections;
-    ServerSocket psuedoServerSocket; // socket that this client is exposing for connections by other peers
-    boolean active; // currently unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
+    ServerSocket pseudoServerSocket; // socket that this client is exposing for connections by other peers
+    boolean active; // currently, unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
     Tetris underlying;
     int processID; // the id of this peer
 
@@ -24,7 +25,7 @@ public class RealClient {
         active = true;
     }
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         if (args.length != 4) {
             System.err.println("must specify port and address of the matchmaking server");
             System.err.println("usage: -port [portNumber] -addr [ipAddress] ");
@@ -38,9 +39,15 @@ public class RealClient {
         String address = args[3];
         RealClient client = new RealClient();
 
-
         try {
-            Socket clientSocket = new Socket(address, port); // connect to Matchmaker
+            Socket clientSocket;
+            try {
+                clientSocket = new Socket(address, port); // connect to Matchmaker
+            } catch (ConnectException e) {
+                System.err.println("Failed to connect to the specified address and port (is the matchmaking server running?)");
+                return;
+            }
+
             OutputStream outStream = clientSocket.getOutputStream();
             InputStream inStream = clientSocket.getInputStream();
 
@@ -109,8 +116,8 @@ public class RealClient {
                     }
                 }
             }
-            if (client.psuedoServerSocket != null) {
-                client.psuedoServerSocket.close();
+            if (client.pseudoServerSocket != null) {
+                client.pseudoServerSocket.close();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -122,7 +129,7 @@ public class RealClient {
         System.out.println("Peer (Process ID: " + processID + ") is starting hosting on ip " + addr + ", port " + port);
         // handle server socket and connection thread starting
         try {
-            psuedoServerSocket = new ServerSocket(port, 50, Inet4Address.getByName(addr));
+            pseudoServerSocket = new ServerSocket(port, 50, Inet4Address.getByName(addr));
             ConnectionThread connThread = new ConnectionThread(this);
             new Thread(connThread).start(); // see thread for all connection logic
         } catch (IOException e) {
@@ -187,7 +194,7 @@ public class RealClient {
 
             this.connections.add(tr);
 
-            tr.send(MessageType.SET_PROC_ID, new Integer(this.processID).toString());
+            tr.send(MessageType.SET_PROC_ID, Integer.toString(this.processID));
 
             Thread recvThread = new Thread(new ReceiverThread(tr, this, clientSocket));
             recvThread.start();
@@ -224,7 +231,7 @@ public class RealClient {
         public void run() {
             while (true) {
                 try {
-                    Socket pseudoClientSocket = this.client.psuedoServerSocket.accept(); // accept connection from opposing peer
+                    Socket pseudoClientSocket = this.client.pseudoServerSocket.accept(); // accept connection from opposing peer
                     System.out.println("Peer received connection request from " + pseudoClientSocket.getInetAddress().toString().substring(1) + " at port " + pseudoClientSocket.getPort());
                     OutputStream outStream = pseudoClientSocket.getOutputStream();
                     InputStream inStream = pseudoClientSocket.getInputStream(); // grab streams
