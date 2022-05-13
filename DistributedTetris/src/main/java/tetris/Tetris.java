@@ -243,7 +243,7 @@ public class Tetris extends JPanel {
         }
         clearRows();
         newPiece();
-        client.broadcast(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
+        if(client != null) {client.broadcast(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));}
     }
 
     public void dropToBottom() {
