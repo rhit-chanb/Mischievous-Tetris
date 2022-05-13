@@ -12,9 +12,9 @@ public enum TColor {
     GREEN("g", new Color(89, 177, 1)),
     PINK("p", new Color(175, 41, 138)),
     RED("r", new Color(215, 15, 55)),
-    BLACK("*", Color.BLACK),
+    OPEN("*", Color.BLACK),
     BAR("|", Color.GRAY),
-    EMPTY("N", Color.WHITE);
+    UNKNOWN("N", Color.WHITE);
 
     public final Color color;
     public final String stringRep;
@@ -37,7 +37,7 @@ public enum TColor {
 
     public static TColor fromString(String input) {
         TColor found = charToColor.get(input);
-        return (found == null) ? TColor.EMPTY : found; 
+        return (found == null) ? TColor.UNKNOWN : found;
     }
 
     static {

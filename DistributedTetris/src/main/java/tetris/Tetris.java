@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Tetris extends JPanel {
+    public static final String BOARD_ROW_SEPARATOR = "S";
     private static final long serialVersionUID = -8715353373678321308L;
     public static HashMap<Color, String> ColorToChar = new HashMap<>();
     public static HashMap<String, Color> CharToColor = new HashMap<>();
@@ -37,7 +38,7 @@ public class Tetris extends JPanel {
     private Rotation rotation;
     private List<Tetromino> nextPieces = new ArrayList<>();
     private long score;
-    private Color[][] well;
+    private TColor[][] well;
     private Map<Integer, Color[][]> opponentBoards = new HashMap<>();
     private int softLock = softLockConstant;
 
@@ -117,24 +118,24 @@ public class Tetris extends JPanel {
         }
     }
 
-    public String BoardToString(Color[][] board) {
+    public String BoardToString(TColor[][] board) {
         StringBuilder result = new StringBuilder();
-        for (Color[] value : board) {
-            for (Color color : value) {
-                String val = ColorToChar.get(color);
-                if (val == null) {
-                    System.out.println(color + " gave null");
+        for (TColor[] row : board) { // TODO name - might be a col and not a row?
+            for (TColor cell : row) {
+                if (cell == null) {
+                    System.out.println("Cell was null?");
+                } else {
+                    result.append(cell.toString());
                 }
-                result.append(val);
             }
-            result.append('S');
+            result.append(BOARD_ROW_SEPARATOR);
         }
         return result.toString();
     }
 
     public Color[][] StringToBoard(String s) {
         Color[][] result = new Color[12][24];
-        String[] rows = s.split("S");
+        String[] rows = s.split(BOARD_ROW_SEPARATOR);
         int r = 0;
         for (String row : rows) {
             for (int i = 0; i < result[r].length; i++) {
@@ -147,35 +148,13 @@ public class Tetris extends JPanel {
 
     // Creates a border around the well and initializes the dropping piece
     public void init() {
-//        ColorToChar.put(tetrominoColors[0], "c");
-//        ColorToChar.put(tetrominoColors[1], "o");
-//        ColorToChar.put(tetrominoColors[2], "b");
-//        ColorToChar.put(tetrominoColors[3], "y");
-//        ColorToChar.put(tetrominoColors[4], "g");
-//        ColorToChar.put(tetrominoColors[5], "p");
-//        ColorToChar.put(tetrominoColors[6], "r");
-//        ColorToChar.put(Color.BLACK, "*");
-//        ColorToChar.put(Color.GRAY, "|");
-//        ColorToChar.put(null, "N");
-//
-//
-//        CharToColor.put("c", tetrominoColors[0]);
-//        CharToColor.put("o", tetrominoColors[1]);
-//        CharToColor.put("b", tetrominoColors[2]);
-//        CharToColor.put("y", tetrominoColors[3]);
-//        CharToColor.put("g", tetrominoColors[4]);
-//        CharToColor.put("p", tetrominoColors[5]);
-//        CharToColor.put("r", tetrominoColors[6]);
-//        CharToColor.put("*", Color.BLACK);
-//        CharToColor.put("|", Color.GRAY);
-//        CharToColor.put("N", null);
-        well = new Color[12][24];
+        well = new TColor[12][24];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
                 if (i == 0 || i == 11 || j == 22) {
-                    well[i][j] = Color.GRAY;
+                    well[i][j] = TColor.BAR;
                 } else {
-                    well[i][j] = Color.BLACK;
+                    well[i][j] = TColor.OPEN;
                 }
             }
         }
@@ -206,7 +185,7 @@ public class Tetris extends JPanel {
     // Collision test for the dropping piece
     private boolean collidesAt(int x, int y, Rotation rotation) {
         for (Point p : currentPiece.inRotation(rotation)) {
-            if (well[p.x + x][p.y + y] != Color.BLACK) {
+            if (well[p.x + x][p.y + y] != TColor.OPEN) {
                 return true;
             }
         }
@@ -260,7 +239,7 @@ public class Tetris extends JPanel {
     // collision detection.
     public void fixToWell() {
         for (Point p : currentPiece.inRotation(rotation)) {
-            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = tetrominoColors[currentPiece.legacyInt];
+            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.color;
         }
         clearRows();
         newPiece();
@@ -297,7 +276,7 @@ public class Tetris extends JPanel {
         for (int j = 21; j > 0; j--) {
             gap = false;
             for (int i = 1; i < 11; i++) {
-                if (well[i][j] == Color.BLACK) {
+                if (well[i][j] == TColor.OPEN) {
                     gap = true;
                     break;
                 }
@@ -310,22 +289,22 @@ public class Tetris extends JPanel {
         }
 
         switch (numClears) {
-            case 1:
+            case 1 -> {
                 score += 100;
                 this.broadcastMessage("LINE_CLEAR SINGLE");
-                break;
-            case 2:
+            }
+            case 2 -> {
                 score += 300;
                 this.broadcastMessage("LINE_CLEAR DOUBLE");
-                break;
-            case 3:
+            }
+            case 3 -> {
                 score += 500;
                 this.broadcastMessage("LINE_CLEAR TRIPLE");
-                break;
-            case 4:
+            }
+            case 4 -> {
                 score += 800;
                 this.broadcastMessage("LINE_CLEAR TETRIS");
-                break;
+            }
         }
     }
 
@@ -333,20 +312,20 @@ public class Tetris extends JPanel {
     public int checkTheoreticalPos() {
         ArrayList<Integer> theor = new ArrayList<>();
         for (Point p : currentPiece.inRotation(rotation)) {
-            int theorVal = 0;
+            int theoreticalVal = 0;
             for (int j = p.y + pieceOrigin.y + 1; j < 22; j++) {
-                if (well[p.x + pieceOrigin.x][j] == Color.BLACK) {
-                    theorVal++;
+                if (well[p.x + pieceOrigin.x][j] == TColor.OPEN) {
+                    theoreticalVal++;
                 } else break;
             }
-            theor.add(theorVal);
+            theor.add(theoreticalVal);
         }
         return Collections.min(theor) + pieceOrigin.y;
     }
 
     // Draw the falling piece
     private void drawPiece(Graphics g) {
-        //paints the theoretical gray Tetris.Tetromino (shadow piece)
+        //paints the theoretical gray Tetromino (shadow piece)
         g.setColor(Color.GRAY);
         for (Point p : currentPiece.inRotation(rotation)) {
             g.fillRect((p.x + pieceOrigin.x) * 26,
@@ -369,7 +348,7 @@ public class Tetris extends JPanel {
         g.fillRect(0, 0, 26 * 12, 26 * 23);
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
-                g.setColor(well[i][j]);
+                g.setColor(well[i][j].color);
                 g.fillRect(26 * i, 26 * j, 25, 25);
             }
         }

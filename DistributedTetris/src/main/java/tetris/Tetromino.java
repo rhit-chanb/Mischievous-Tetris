@@ -49,7 +49,7 @@ public enum Tetromino {
 
     public final Point[][] shapeRotations;
     public final int legacyInt;
-    private final TColor color;
+    public final TColor color;
 
     Tetromino(int legacyInt, Point[][] shapeRot, TColor color) {
         this.legacyInt = legacyInt;
