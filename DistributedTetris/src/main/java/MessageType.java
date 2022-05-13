@@ -5,5 +5,6 @@ public enum MessageType {
     HOST_ON,
     CONNECT_TO,
     SET_PROC_ID,
-    TETRIS_EVENT
+    TETRIS_EVENT,
+    UPDATE_BOARD_STATE
 }
