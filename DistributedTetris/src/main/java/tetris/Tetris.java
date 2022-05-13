@@ -1,3 +1,8 @@
+package tetris;
+
+import networking.MessageType;
+import networking.RealClient;
+
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -12,69 +17,10 @@ import java.util.List;
 import java.util.Map;
 
 public class Tetris extends JPanel {
-
     private static final long serialVersionUID = -8715353373678321308L;
     public static HashMap<Color, String> ColorToChar = new HashMap<>();
     public static HashMap<String, Color> CharToColor = new HashMap<>();
     //    private static final int height =
-    private final Point[][][] Tetrominos = {
-            // I-Piece
-            {
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)},
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(1, 3)}
-            },
-
-            // J-Piece
-            {
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(2, 0)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 2)},
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(0, 2)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(0, 0)}
-            },
-
-            // L-Piece
-            {
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(0, 0)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(2, 0)},
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(2, 2)},
-                    {new Point(1, 0), new Point(1, 1), new Point(1, 2), new Point(0, 2)}
-
-            },
-
-            // O-Piece
-            {
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 0), new Point(1, 1)}
-            },
-
-            // S-Piece
-            {
-                    {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
-                    {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
-                    {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)}
-            },
-
-            // T-Piece
-            {
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(1, 2)},
-                    {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(1, 2)},
-                    {new Point(1, 0), new Point(1, 1), new Point(2, 1), new Point(1, 2)}
-            },
-
-            // Z-Piece
-            {
-                    {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)},
-                    {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
-                    {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}
-            }
-    };
     private final Color[] tetrominoColors = {
             new Color(15, 155, 215), // cyan
             new Color(227, 91, 2), // orange
@@ -87,9 +33,9 @@ public class Tetris extends JPanel {
     private final int softLockConstant = 2;
     public RealClient client;
     private Point pieceOrigin;
-    private int currentPiece;
-    private int rotation;
-    private ArrayList<Integer> nextPieces = new ArrayList<Integer>();
+    private Tetromino currentPiece;
+    private Rotation rotation;
+    private List<Tetromino> nextPieces = new ArrayList<>();
     private long score;
     private Color[][] well;
     private Map<Integer, Color[][]> opponentBoards = new HashMap<>();
@@ -99,8 +45,9 @@ public class Tetris extends JPanel {
 
     }
 
+    @Deprecated(since = "Use RealClient instead") // probably bad Since usage?
     public static void main(String[] args) {
-        JFrame f = new JFrame("Tetris");
+        JFrame f = new JFrame("Mischievous Tetris");
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(12 * 26 + 10, 26 * 23 + 25);
         f.setVisible(true);
@@ -162,19 +109,21 @@ public class Tetris extends JPanel {
     }
 
     public void broadcastMessage(String message) {
-        // more bulletproofing just in case the Tetris game somehow isn't connected to a client?
+        // more bulletproofing just in case the Tetris.Tetris game somehow isn't connected to a client?
         if (this.client != null) {
             this.client.broadcast(MessageType.TETRIS_EVENT, message);
+        } else {
+            System.err.println("Somehow not connected to a client?");
         }
     }
 
     public String BoardToString(Color[][] board) {
         StringBuilder result = new StringBuilder();
         for (Color[] value : board) {
-            for (int n = 0; n < value.length; n++) {
-                String val = ColorToChar.get(value[n]);
+            for (Color color : value) {
+                String val = ColorToChar.get(color);
                 if (val == null) {
-                    System.out.println(value[n] + " gave null");
+                    System.out.println(color + " gave null");
                 }
                 result.append(val);
             }
@@ -198,28 +147,28 @@ public class Tetris extends JPanel {
 
     // Creates a border around the well and initializes the dropping piece
     public void init() {
-        ColorToChar.put(tetrominoColors[0], "c");
-        ColorToChar.put(tetrominoColors[1], "o");
-        ColorToChar.put(tetrominoColors[2], "b");
-        ColorToChar.put(tetrominoColors[3], "y");
-        ColorToChar.put(tetrominoColors[4], "g");
-        ColorToChar.put(tetrominoColors[5], "p");
-        ColorToChar.put(tetrominoColors[6], "r");
-        ColorToChar.put(Color.BLACK, "*");
-        ColorToChar.put(Color.GRAY, "|");
-        ColorToChar.put(null, "N");
-
-
-        CharToColor.put("c", tetrominoColors[0]);
-        CharToColor.put("o", tetrominoColors[1]);
-        CharToColor.put("b", tetrominoColors[2]);
-        CharToColor.put("y", tetrominoColors[3]);
-        CharToColor.put("g", tetrominoColors[4]);
-        CharToColor.put("p", tetrominoColors[5]);
-        CharToColor.put("r", tetrominoColors[6]);
-        CharToColor.put("*", Color.BLACK);
-        CharToColor.put("|", Color.GRAY);
-        CharToColor.put("N", null);
+//        ColorToChar.put(tetrominoColors[0], "c");
+//        ColorToChar.put(tetrominoColors[1], "o");
+//        ColorToChar.put(tetrominoColors[2], "b");
+//        ColorToChar.put(tetrominoColors[3], "y");
+//        ColorToChar.put(tetrominoColors[4], "g");
+//        ColorToChar.put(tetrominoColors[5], "p");
+//        ColorToChar.put(tetrominoColors[6], "r");
+//        ColorToChar.put(Color.BLACK, "*");
+//        ColorToChar.put(Color.GRAY, "|");
+//        ColorToChar.put(null, "N");
+//
+//
+//        CharToColor.put("c", tetrominoColors[0]);
+//        CharToColor.put("o", tetrominoColors[1]);
+//        CharToColor.put("b", tetrominoColors[2]);
+//        CharToColor.put("y", tetrominoColors[3]);
+//        CharToColor.put("g", tetrominoColors[4]);
+//        CharToColor.put("p", tetrominoColors[5]);
+//        CharToColor.put("r", tetrominoColors[6]);
+//        CharToColor.put("*", Color.BLACK);
+//        CharToColor.put("|", Color.GRAY);
+//        CharToColor.put("N", null);
         well = new Color[12][24];
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
@@ -237,10 +186,9 @@ public class Tetris extends JPanel {
     public void newPiece() {
         softLock = softLockConstant; // reset softlock
         pieceOrigin = new Point(5, 0); // TODO: spawn piece above the board
-        rotation = 0;
+        rotation = Rotation._0;
         if (nextPieces.isEmpty()) {
-            Collections.addAll(nextPieces, 0, 1, 2, 3, 4, 5, 6);
-            Collections.shuffle(nextPieces); //current 7-bag randomization
+            nextPieces.addAll(generateNewBag());
             // TODO: change nextPieces to be able to be modified by outside events
             // TODO: add piece preview
         }
@@ -256,8 +204,8 @@ public class Tetris extends JPanel {
     }
 
     // Collision test for the dropping piece
-    private boolean collidesAt(int x, int y, int rotation) {
-        for (Point p : Tetrominos[currentPiece][rotation]) {
+    private boolean collidesAt(int x, int y, Rotation rotation) {
+        for (Point p : currentPiece.inRotation(rotation)) {
             if (well[p.x + x][p.y + y] != Color.BLACK) {
                 return true;
             }
@@ -268,16 +216,17 @@ public class Tetris extends JPanel {
     // Rotate the piece clockwise or counterclockwise
     public void rotate(int i) {
 
-        if (currentPiece == 5 && (i == 1 || i == -1)) {
+        if (currentPiece == Tetromino.T_PIECE && (i == 1 || i == -1)) {
             i *= -1;
             //hacky workaround for t rotation?
         }
 
 
-        int newRotation = (rotation + i) % 4;
-        if (newRotation < 0) {
-            newRotation = 3;
+        int newRotationIndex = (rotation.toInt() + i) % 4;
+        if (newRotationIndex < 0) {
+            newRotationIndex = 3;
         }
+        Rotation newRotation = Rotation.fromInt(newRotationIndex);
         if (!collidesAt(pieceOrigin.x, pieceOrigin.y, newRotation)) {
             rotation = newRotation;
         }
@@ -310,8 +259,8 @@ public class Tetris extends JPanel {
     // Make the dropping piece part of the well, so it is available for
     // collision detection.
     public void fixToWell() {
-        for (Point p : Tetrominos[currentPiece][rotation]) {
-            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = tetrominoColors[currentPiece];
+        for (Point p : currentPiece.inRotation(rotation)) {
+            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = tetrominoColors[currentPiece.legacyInt];
         }
         clearRows();
         newPiece();
@@ -380,10 +329,10 @@ public class Tetris extends JPanel {
         }
     }
 
-    //checks for the theoretical y position of the gray Tetromino (shadow piece)
+    //checks for the theoretical y position of the gray Tetris.Tetromino (shadow piece)
     public int checkTheoreticalPos() {
         ArrayList<Integer> theor = new ArrayList<>();
-        for (Point p : Tetrominos[currentPiece][rotation]) {
+        for (Point p : currentPiece.inRotation(rotation)) {
             int theorVal = 0;
             for (int j = p.y + pieceOrigin.y + 1; j < 22; j++) {
                 if (well[p.x + pieceOrigin.x][j] == Color.BLACK) {
@@ -397,22 +346,21 @@ public class Tetris extends JPanel {
 
     // Draw the falling piece
     private void drawPiece(Graphics g) {
-        //paints the theoretical gray Tetromino (shadow piece)
+        //paints the theoretical gray Tetris.Tetromino (shadow piece)
         g.setColor(Color.GRAY);
-        for (Point p : Tetrominos[currentPiece][rotation]) {
+        for (Point p : currentPiece.inRotation(rotation)) {
             g.fillRect((p.x + pieceOrigin.x) * 26,
                     (p.y + checkTheoreticalPos()) * 26,
                     25, 25);
         }
 
-        g.setColor(tetrominoColors[currentPiece]);
-        for (Point p : Tetrominos[currentPiece][rotation]) {
+        g.setColor(tetrominoColors[currentPiece.legacyInt]);
+        for (Point p : currentPiece.inRotation(rotation)) {
 
             g.fillRect((p.x + pieceOrigin.x) * 26,
                     (p.y + pieceOrigin.y) * 26,
                     25, 25);
         }
-
     }
 
     @Override

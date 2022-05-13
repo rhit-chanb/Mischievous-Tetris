@@ -1,3 +1,5 @@
+package networking;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -5,25 +7,6 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class BarebonesClient {
-
-    static class ReceiverThread implements Runnable{
-        Transceiver tr;
-
-        public ReceiverThread(Transceiver tr) {
-            this.tr = tr;
-        }
-
-        @Override
-        public void run() {
-            while(!tr.isClosed){
-                String message = tr.receive();
-                System.out.println(message);
-            }
-            System.out.println("Detected dead Transceiver...");
-            System.out.println("Receiver thread closing...");
-            System.out.println("Removing Transceiver from connections array");
-        }
-    }
 
     public static void main(String args[]) {
         if (args.length != 4) {
@@ -40,7 +23,6 @@ public class BarebonesClient {
             Socket clientSocket = new Socket(address, port);
             OutputStream outStream = clientSocket.getOutputStream();
             InputStream inStream = clientSocket.getInputStream();
-
 
 
             Transceiver tr = new Transceiver(0, inStream, outStream);
@@ -72,7 +54,24 @@ public class BarebonesClient {
         }
     }
 
+    static class ReceiverThread implements Runnable {
+        Transceiver tr;
 
+        public ReceiverThread(Transceiver tr) {
+            this.tr = tr;
+        }
+
+        @Override
+        public void run() {
+            while (!tr.isClosed) {
+                String message = tr.receive();
+                System.out.println(message);
+            }
+            System.out.println("Detected dead Transceiver...");
+            System.out.println("Receiver thread closing...");
+            System.out.println("Removing Transceiver from connections array");
+        }
+    }
 
 
 }

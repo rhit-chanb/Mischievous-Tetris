@@ -1,3 +1,5 @@
+package networking;
+
 public class Message {
     public MessageType type;
     public String content;

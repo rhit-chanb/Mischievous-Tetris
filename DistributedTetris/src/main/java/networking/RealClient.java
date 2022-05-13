@@ -1,3 +1,8 @@
+package networking;
+
+import tetris.Tetris;
+import tetris.TetrisThread;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -8,13 +13,14 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Supplier;
 
 public class RealClient {
 
-    ArrayList<Transceiver> connections;
+    List<Transceiver> connections;
     ServerSocket pseudoServerSocket; // socket that this client is exposing for connections by other peers
     boolean active; // currently, unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
     Tetris underlying;
@@ -139,7 +145,7 @@ public class RealClient {
 
     // TODO: overload the crap out of this, probably the only method we care about really
     public void handleMessage(String message, int from) {
-        System.out.println("Received Message: " + message + " from process: " + from);
+        System.out.println("Received networking.Message: " + message + " from process: " + from);
         if (message == null) {
             return;
         }
@@ -166,8 +172,8 @@ public class RealClient {
         }
 
         else if (message.startsWith(MessageType.NORMAL.toString())) {
-            // forward to underlying Tetris object (if it exists)
-            String toForward = message.substring(7); // truncate off NORMAL header, Tetris shouldn't care about that?
+            // forward to underlying Tetris.Tetris object (if it exists)
+            String toForward = message.substring(7); // truncate off NORMAL header, Tetris.Tetris shouldn't care about that?
             if (this.underlying != null) {
                 this.underlying.handleMessageEvent(toForward);
             }
@@ -209,7 +215,7 @@ public class RealClient {
         }
     }
 
-    // creates an underlying Tetris game and passes a reference to this class for its use
+    // creates an underlying Tetris.Tetris game and passes a reference to this class for its use
     public void startGame() {
         // only initialize if a game is not already running
         if (this.underlying == null) {

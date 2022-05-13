@@ -1,3 +1,5 @@
+package networking;
+
 public enum MessageType {
     SHUTDOWN,
     NORMAL,
