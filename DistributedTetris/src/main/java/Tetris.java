@@ -93,6 +93,7 @@ public class Tetris extends JPanel {
 
     private long score;
     private Color[][] well;
+    private HashMap<Integer, Color[][]> opponentBoard = new HashMap<>();
     private final int softLockConstant = 2;
     private int softLock = softLockConstant;
 
@@ -366,6 +367,10 @@ public class Tetris extends JPanel {
 
         // Draw the currently falling piece
         drawPiece(g);
+    }
+
+    public void handleRecvBoard(String board, int fromProcess){
+        opponentBoard.put(fromProcess, StringToBoard(board));
     }
 
     public static void main(String[] args) {
