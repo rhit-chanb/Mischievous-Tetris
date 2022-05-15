@@ -278,10 +278,15 @@ public class RealClient {
                 String message = tr.receive();
                 this.client.handleMessage(message, tr.contactID); // adding source ID, but not doing anything with it for now
             }
+            int processID = tr.contactID;
             System.out.println("Detected dead Transceiver...");
             System.out.println("Receiver thread closing...");
             System.out.println("Removing Transceiver from connections array");
             this.client.connections.remove(tr); // when aforementioned boolean in tr is read as true, remove it from arraylist
+
+            // TODO: @DAVID also remove whatever board is associated with processID
+
+
             try {
                 this.pseudoClientSocket.close(); //properly take care of the loose socket
             } catch (IOException e) {
