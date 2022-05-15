@@ -74,6 +74,8 @@ public class RealClient {
                     t.send(MessageType.SHUTDOWN, "shut");
                 } //TODO: perhaps abstract this duplicated for loop into a method of RealClient, or maybe somewhere else
                 tr.close();
+                // probably bad practice but whatever
+                System.exit(0);
                 return true;
             });
             commands.put("/start", () -> {
