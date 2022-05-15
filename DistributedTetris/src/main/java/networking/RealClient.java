@@ -66,7 +66,7 @@ public class RealClient {
 
             // commands should return true if they want to break out of the loop
             Map<String, Supplier<Boolean>> commands = new HashMap<>();
-            commands.put("exit", () -> {
+            commands.put("/exit", () -> {
                 System.out.println("Exiting and signaling to close Transceiver objects"); // SCREAM OF DEATH
                 tr.send(MessageType.SHUTDOWN, " shut");
                 // simple broadcast everything (permanent)
