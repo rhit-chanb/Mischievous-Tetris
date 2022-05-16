@@ -9,5 +9,6 @@ public enum MessageType {
     SET_PROC_ID,
     TETRIS_EVENT,
     UPDATE_BOARD_STATE,
-    DEATH
+    DEATH,
+    ATTACK
 }

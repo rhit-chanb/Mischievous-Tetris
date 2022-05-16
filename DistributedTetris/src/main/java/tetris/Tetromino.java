@@ -47,6 +47,7 @@ public enum Tetromino {
             {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}
     }, TColor.RED);
 
+    public static final Tetromino[] ORDER = new Tetromino[]{I_PIECE, J_PIECE, L_PIECE, O_PIECE, S_PIECE, T_PIECE, Z_PIECE};
     public final Point[][] shapeRotations;
     public final int legacyInt;
     public final TColor tcolor;
@@ -55,6 +56,12 @@ public enum Tetromino {
         this.legacyInt = legacyInt;
         this.shapeRotations = shapeRot;
         this.tcolor = tcolor;
+    }
+    public static Tetromino fromInt(int index){
+        if (index < 0 || index >= ORDER.length) {
+            throw new RuntimeException("Invalid type index " + index);
+        }
+        return ORDER[index];
     }
 
     public Point[] inRotation(Rotation rot) {

@@ -41,6 +41,7 @@ public class TetrisThread implements Runnable {
                     //game.score += 1;
                     case KeyEvent.VK_SPACE -> game.dropToBottom();
                     case KeyEvent.VK_R -> game.init();
+                    case KeyEvent.VK_SHIFT -> game.toggleMode();
                 }
             }
 

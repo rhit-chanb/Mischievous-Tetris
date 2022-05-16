@@ -1,8 +1,8 @@
 package networking;
 
-import tetris.Tetris;
-import tetris.TetrisThread;
+import tetris.*;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -152,16 +152,36 @@ public class RealClient {
             return;
         }
         String[] argList = message.split(" "); // assume all messages are delimited with spaces
+        // handle updating board
         if (argList[0].equals(MessageType.UPDATE_BOARD_STATE.toString())) {
             if (this.underlying != null) {
                 this.underlying.handleRecvBoard(argList[1], from);
             }
         }
+        // handle another peer losing
         if (argList[0].equals(MessageType.DEATH.toString())){
             if (this.underlying != null) {
                 this.underlying.handleDeath(from);
             }
         }
+        // handle attacks
+        // message is of the form:
+        // ATTACK <x pos> <y pos> <rotation state> <piece type>
+        if (argList[0].equals(MessageType.ATTACK.toString())){
+            if (this.underlying != null) {
+                int x = Integer.parseInt(argList[1]);
+                int y = Integer.parseInt(argList[2]);
+                Point pieceOrigin = new Point(x, y);
+                Rotation rotation = Rotation.fromInt(Integer.parseInt(argList[3]));
+                Tetromino pieceType = Tetromino.fromInt(Integer.parseInt(argList[4]));
+
+                EnemyPiece attackingPiece = new EnemyPiece(pieceOrigin, rotation, pieceType);
+
+                this.underlying.handleAttack(attackingPiece);
+            }
+        }
+
+
 
 
         if (message.startsWith(MessageType.HOST_ON.toString())) {

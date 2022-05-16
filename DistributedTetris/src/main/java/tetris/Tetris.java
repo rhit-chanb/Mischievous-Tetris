@@ -30,6 +30,9 @@ public class Tetris extends JPanel {
     private TColor[][] well;
     private int softLock = softLockConstant;
     private TGameStatus status;
+    private ArrayList<EnemyPiece> attackQueue;
+    private int ammo;
+    private boolean attacking = false;
 
     public Tetris() {
 
@@ -98,10 +101,22 @@ public class Tetris extends JPanel {
         System.out.println("Received a board update from " + fromProcess);
         opponentBoards.put(fromProcess, StringToBoard(board));
     }
+
     public void handleDeath(int fromProcess) {
         System.out.println(fromProcess + " has topped out!");
 
         //TODO: other death related things
+    }
+
+    public void handleAttack(EnemyPiece piece) {
+        this.attackQueue.add(piece);
+
+        System.out.println("adding to attack queue: " + piece);
+
+        System.out.println("Remaining attack queue: ");
+        for(EnemyPiece p: attackQueue){
+            System.out.println(piece);
+        }
     }
 
 
@@ -113,6 +128,16 @@ public class Tetris extends JPanel {
             System.err.println("Somehow not connected to a client?");
         }
     }
+
+    public void broadcastMessage(MessageType type, String message) {
+        // more bulletproofing just in case the Tetris.Tetris game somehow isn't connected to a client?
+        if (this.client != null) {
+            this.client.broadcast(type, message);
+        } else {
+            System.err.println("Somehow not connected to a client?");
+        }
+    }
+
 
     public String BoardToString(TColor[][] board) {
         StringBuilder result = new StringBuilder();
@@ -156,12 +181,51 @@ public class Tetris extends JPanel {
                 }
             }
         }
+        this.attackQueue = new ArrayList<>();
         newPiece();
         this.status = TGameStatus.PLAYING;
+
+    }
+    // accidental on purpose recursion here
+    public boolean takeAttackFromQueue(){
+        boolean success = false;
+        if(!attackQueue.isEmpty()){
+            EnemyPiece toTake = attackQueue.remove(0);
+            if(ammo > 0){
+                ammo--;
+                return true;
+            }
+
+
+            System.out.println("Taking attack: " + toTake);
+
+            System.out.println("Remaining attack queue: ");
+            for(EnemyPiece p: attackQueue){
+                System.out.println(attackQueue);
+            }
+
+            pieceOrigin = toTake.pieceOrigin;
+            rotation = toTake.rotation;
+            currentPiece = toTake.pieceType;
+
+            int newY = checkTheoreticalPos();
+            pieceOrigin.y = newY;
+
+            fixToWellNoNewPiece();
+            repaint();
+
+            success = true;
+        }
+        return success;
     }
 
     // Put a new, random piece into the dropping position
     public void newPiece() {
+        boolean attackTaken = takeAttackFromQueue();
+        if(this.status == TGameStatus.GAME_OVER){
+            return;
+        }
+
         softLock = softLockConstant; // reset softlock
         pieceOrigin = new Point(5, 0); // TODO: spawn piece above the board
         rotation = Rotation._0;
@@ -218,10 +282,14 @@ public class Tetris extends JPanel {
         }
         repaint();
     }
+    public void toggleMode(){
+        this.attacking = !this.attacking;
+    }
+
 
     // Drops the piece one line or fixes it to the well if it can't drop
     public void dropDown() {
-        if(this.status == TGameStatus.PLAYING){
+        if (this.status == TGameStatus.PLAYING) {
             if (!collidesAt(pieceOrigin.x, pieceOrigin.y + 1, rotation)) {
                 pieceOrigin.y += 1;
             } else {
@@ -240,6 +308,17 @@ public class Tetris extends JPanel {
     // Make the dropping piece part of the well, so it is available for
     // collision detection.
     public void fixToWell() {
+
+        if (ammo > 0 && this.attacking) {
+            // "send" piece to other board(s) // TODO: actually have either random or fixed targeting maybe?
+            pieceOrigin.y = 0;
+            this.broadcastMessage(MessageType.ATTACK, pieceOrigin.x + " " + pieceOrigin.y + " " + rotation.toInt() + " " + currentPiece.legacyInt);
+            ammo--;
+            newPiece();
+            // skip placement of piece on player's board since it "went" to the other board(s)
+            return;
+        }
+
         for (Point p : currentPiece.inRotation(rotation)) {
             well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
         }
@@ -248,23 +327,41 @@ public class Tetris extends JPanel {
         // TODO probably abstract broadcasts elsewhere so we don't need to null check
         //  or maybe make a fake client
         //  client was null (maybe testing offline?)
-        if (client != null) {
-            client.broadcast(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
-        }
+
+        this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
 
         checkForTopOut();
-        if(this.status == TGameStatus.PLAYING){
+        if (this.status == TGameStatus.PLAYING) {
             newPiece();
         } else {
-            client.broadcast(MessageType.DEATH, "");
+            this.broadcastMessage(MessageType.DEATH, "");
         }
     }
+    public void fixToWellNoNewPiece(){
+        for (Point p : currentPiece.inRotation(rotation)) {
+            well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
+        }
+        clearRows();
+
+        // TODO probably abstract broadcasts elsewhere so we don't need to null check
+        //  or maybe make a fake client
+        //  client was null (maybe testing offline?)
+
+        this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
+
+        checkForTopOut();
+
+        if(this.status == TGameStatus.GAME_OVER){
+            this.broadcastMessage(MessageType.DEATH, "");
+        }
+    }
+
 
     public void checkForTopOut() {
         for (int i = 0; i < well.length; i++) {
             for (int j = 0; j < 4; j++) {
                 if (well[i][j] != null) {
-                    if (!(well[i][j] == TColor.OPEN || well[i][j] == TColor.BAR)){
+                    if (!(well[i][j] == TColor.OPEN || well[i][j] == TColor.BAR)) {
                         //System.out.println("Detected out of bounds piece at: x= " + i + ", y= " + j);
                         this.status = TGameStatus.GAME_OVER;
                     }
@@ -320,18 +417,22 @@ public class Tetris extends JPanel {
             case 1 -> {
                 score += 100;
                 this.broadcastMessage("LINE_CLEAR SINGLE");
+                this.ammo += 1;
             }
             case 2 -> {
                 score += 300;
                 this.broadcastMessage("LINE_CLEAR DOUBLE");
+                this.ammo += 2;
             }
             case 3 -> {
                 score += 500;
                 this.broadcastMessage("LINE_CLEAR TRIPLE");
+                this.ammo += 3;
             }
             case 4 -> {
                 score += 800;
                 this.broadcastMessage("LINE_CLEAR TETRIS");
+                this.ammo += 4;
             }
         }
     }
@@ -355,6 +456,14 @@ public class Tetris extends JPanel {
     private void drawPiece(Graphics g) {
         //paints the theoretical gray Tetromino (shadow piece)
         g.setColor(Color.GRAY);
+        if(this.ammo > 0){
+            if(this.attacking){
+                g.setColor(new Color(0, 255, 0, 75)); // should be transparent greenish
+            } else {
+                g.setColor(new Color(242, 176, 8, 50)); // should be like transparent yellowish
+            }
+        }
+
         for (Point p : currentPiece.inRotation(rotation)) {
             g.fillRect((p.x + pieceOrigin.x) * 26,
                     (p.y + checkTheoreticalPos()) * 26,
@@ -385,7 +494,6 @@ public class Tetris extends JPanel {
         }
 
 
-
         int offset = 1;
         for (TColor[][] board : opponentBoards.values()) {
             g.fillRect(offset * (312), 0, 26 * 12, 26 * 23);
@@ -400,20 +508,20 @@ public class Tetris extends JPanel {
 
         // Display the score
         g.setColor(Color.WHITE);
-        g.drawString("" + score, 19 * 12, 25);
+        g.drawString("score: " + score, 19 * 12, 25);
+
+        g.setColor(Color.WHITE);
+        g.drawString("ammo: " + ammo, 19 * 12, 45);
 
         // Show if game over
         g.setColor(Color.red);
 
-        if(this.status == TGameStatus.GAME_OVER){
-            Font gameOverFont = new Font("Chiller", Font.PLAIN, 24);
+        if (this.status == TGameStatus.GAME_OVER) {
+            Font gameOverFont = new Font("Sans Serif", Font.PLAIN, 24);
             g.setFont(gameOverFont);
 
-            g.drawString("GAME OVER", (int) (26*3.5), 26*12);
+            g.drawString("GAME OVER", (int) (26 * 3.5), 26 * 12);
         }
-
-
-
 
 
         // Draw the currently falling piece
