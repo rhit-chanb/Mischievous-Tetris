@@ -221,17 +221,20 @@ public class Tetris extends JPanel {
 
     // Drops the piece one line or fixes it to the well if it can't drop
     public void dropDown() {
-        if (!collidesAt(pieceOrigin.x, pieceOrigin.y + 1, rotation)) {
-            pieceOrigin.y += 1;
-        } else {
-            if (softLock > 0) {
-                softLock--;
+        if(this.status == TGameStatus.PLAYING){
+            if (!collidesAt(pieceOrigin.x, pieceOrigin.y + 1, rotation)) {
+                pieceOrigin.y += 1;
             } else {
-                fixToWell();
-                softLock = softLockConstant;
+                if (softLock > 0) {
+                    softLock--;
+                } else {
+                    fixToWell();
+                    softLock = softLockConstant;
+                }
             }
+            repaint();
         }
-        repaint();
+
     }
 
     // Make the dropping piece part of the well, so it is available for
