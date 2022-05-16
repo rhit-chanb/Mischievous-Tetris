@@ -31,6 +31,7 @@ public class Tetris extends JPanel {
     private long score;
     private TColor[][] well;
     private int softLock = softLockConstant;
+    private TGameStatus status;
 
     public Tetris() {
 
@@ -152,6 +153,7 @@ public class Tetris extends JPanel {
             }
         }
         newPiece();
+        this.status = TGameStatus.PLAYING;
     }
 
     // Put a new, random piece into the dropping position
@@ -242,7 +244,22 @@ public class Tetris extends JPanel {
         if (client != null) {
             client.broadcast(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
         }
+
+        checkForTopOut();
     }
+
+    public void checkForTopOut() {
+        for (int i = 0; i < well.length; i++) {
+            for (int j = 0; j < 4; j++) {
+                if (well[i][j] != null) {
+                    if (!(well[i][j] == TColor.OPEN || well[i][j] == TColor.BAR)){
+                        System.out.println("Detected out of bounds piece at: x= " + i + ", y= " + j);
+                    }
+                }
+            }
+        }
+    }
+
 
     public void dropToBottom() {
 
@@ -344,6 +361,9 @@ public class Tetris extends JPanel {
     public void paintComponent(Graphics g) {
         // Paint the well
         g.fillRect(0, 0, 26 * 12, 26 * 23);
+        g.setColor(Color.red);
+        g.fillRect(0, (26 * 4) - 2, 26 * 12, 2);
+
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
                 g.setColor(well[i][j].color);
