@@ -182,6 +182,8 @@ public class Tetris extends JPanel {
             }
         }
         this.attackQueue = new ArrayList<>();
+        this.score = 0;
+        this.ammo = 8;
         newPiece();
         this.status = TGameStatus.PLAYING;
 
@@ -458,7 +460,7 @@ public class Tetris extends JPanel {
         g.setColor(Color.GRAY);
         if(this.ammo > 0){
             if(this.attacking){
-                g.setColor(new Color(242, 176, 8, 50)); // should be like transparent reddish
+                g.setColor(new Color(242, 20, 8, 50)); // should be like transparent reddish
             } else {
                 g.setColor(new Color(0, 255, 0, 75)); // should be transparent greenish
             }
@@ -479,9 +481,24 @@ public class Tetris extends JPanel {
         }
     }
 
+    private void drawDamageGauge(Graphics g) {
+        if(this.attackQueue.isEmpty()){
+            return;
+        }
+        g.setColor(Color.red);
+        int x = 13-5;
+        int y = 26 * 23;
+        int height = (this.attackQueue.size() * 26) + 26;
+
+        g.fillRect(x, y-height, 10, height);
+
+
+    }
+
     @Override
     public void paintComponent(Graphics g) {
         // Paint the well
+        Color boardBackground = g.getColor();
         g.fillRect(0, 0, 26 * 12, 26 * 23);
         g.setColor(Color.red);
         g.fillRect(0, (26 * 4) - 2, 26 * 12, 2);
@@ -493,6 +510,9 @@ public class Tetris extends JPanel {
             }
         }
 
+        drawDamageGauge(g);
+
+        g.setColor(boardBackground);
 
         int offset = 1;
         for (TColor[][] board : opponentBoards.values()) {
