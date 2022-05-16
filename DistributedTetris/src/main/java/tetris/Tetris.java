@@ -458,9 +458,9 @@ public class Tetris extends JPanel {
         g.setColor(Color.GRAY);
         if(this.ammo > 0){
             if(this.attacking){
-                g.setColor(new Color(0, 255, 0, 75)); // should be transparent greenish
+                g.setColor(new Color(242, 176, 8, 50)); // should be like transparent reddish
             } else {
-                g.setColor(new Color(242, 176, 8, 50)); // should be like transparent yellowish
+                g.setColor(new Color(0, 255, 0, 75)); // should be transparent greenish
             }
         }
 
