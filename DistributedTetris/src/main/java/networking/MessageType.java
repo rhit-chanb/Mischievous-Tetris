@@ -8,5 +8,6 @@ public enum MessageType {
     CONNECT_TO,
     SET_PROC_ID,
     TETRIS_EVENT,
-    UPDATE_BOARD_STATE
+    UPDATE_BOARD_STATE,
+    DEATH
 }

@@ -5,9 +5,7 @@ import networking.RealClient;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.Serial;
@@ -100,6 +98,12 @@ public class Tetris extends JPanel {
         System.out.println("Received a board update from " + fromProcess);
         opponentBoards.put(fromProcess, StringToBoard(board));
     }
+    public void handleDeath(int fromProcess) {
+        System.out.println(fromProcess + " has topped out!");
+
+        //TODO: other death related things
+    }
+
 
     public void broadcastMessage(String message) {
         // more bulletproofing just in case the Tetris.Tetris game somehow isn't connected to a client?
@@ -237,7 +241,7 @@ public class Tetris extends JPanel {
             well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
         }
         clearRows();
-        newPiece();
+
         // TODO probably abstract broadcasts elsewhere so we don't need to null check
         //  or maybe make a fake client
         //  client was null (maybe testing offline?)
@@ -246,6 +250,11 @@ public class Tetris extends JPanel {
         }
 
         checkForTopOut();
+        if(this.status == TGameStatus.PLAYING){
+            newPiece();
+        } else {
+            client.broadcast(MessageType.DEATH, "");
+        }
     }
 
     public void checkForTopOut() {
@@ -253,7 +262,8 @@ public class Tetris extends JPanel {
             for (int j = 0; j < 4; j++) {
                 if (well[i][j] != null) {
                     if (!(well[i][j] == TColor.OPEN || well[i][j] == TColor.BAR)){
-                        System.out.println("Detected out of bounds piece at: x= " + i + ", y= " + j);
+                        //System.out.println("Detected out of bounds piece at: x= " + i + ", y= " + j);
+                        this.status = TGameStatus.GAME_OVER;
                     }
                 }
             }
@@ -370,6 +380,9 @@ public class Tetris extends JPanel {
                 g.fillRect(26 * i, 26 * j, 25, 25);
             }
         }
+
+
+
         int offset = 1;
         for (TColor[][] board : opponentBoards.values()) {
             g.fillRect(offset * (312), 0, 26 * 12, 26 * 23);
@@ -385,6 +398,20 @@ public class Tetris extends JPanel {
         // Display the score
         g.setColor(Color.WHITE);
         g.drawString("" + score, 19 * 12, 25);
+
+        // Show if game over
+        g.setColor(Color.red);
+
+        if(this.status == TGameStatus.GAME_OVER){
+            Font gameOverFont = new Font("Chiller", Font.PLAIN, 24);
+            g.setFont(gameOverFont);
+
+            g.drawString("GAME OVER", (int) (26*3.5), 26*12);
+        }
+
+
+
+
 
         // Draw the currently falling piece
         drawPiece(g);

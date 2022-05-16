@@ -157,6 +157,13 @@ public class RealClient {
                 this.underlying.handleRecvBoard(argList[1], from);
             }
         }
+        if (argList[0].equals(MessageType.DEATH.toString())){
+            if (this.underlying != null) {
+                this.underlying.handleDeath(from);
+            }
+        }
+
+
         if (message.startsWith(MessageType.HOST_ON.toString())) {
             String hostingAddr = argList[1];
             int hostingPort = Integer.parseInt(argList[2]);
