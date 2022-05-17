@@ -181,6 +181,7 @@ public class Tetris extends JPanel {
                 }
             }
         }
+        this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
         this.attackQueue = new ArrayList<>();
         this.score = 0;
         this.ammo = 8;
