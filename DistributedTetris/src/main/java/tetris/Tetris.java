@@ -102,6 +102,11 @@ public class Tetris extends JPanel {
         opponentBoards.put(fromProcess, StringToBoard(board));
     }
 
+    public void handleDisconnect(int fromProcess){
+        System.out.println(fromProcess + " has disconnected");
+        opponentBoards.remove(fromProcess);
+    }
+
     public void handleDeath(int fromProcess) {
         System.out.println(fromProcess + " has topped out!");
 

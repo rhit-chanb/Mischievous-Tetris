@@ -180,9 +180,11 @@ public class RealClient {
                 this.underlying.handleAttack(attackingPiece);
             }
         }
-
-
-
+        if(argList[0].equals(MessageType.SHUTDOWN.toString())){
+            if(this.underlying != null){
+                this.underlying.handleDisconnect(from);
+            }
+        }
 
         if (message.startsWith(MessageType.HOST_ON.toString())) {
             String hostingAddr = argList[1];
