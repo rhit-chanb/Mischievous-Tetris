@@ -105,6 +105,7 @@ public class Tetris extends JPanel {
     public void handleDisconnect(int fromProcess){
         System.out.println(fromProcess + " has disconnected");
         opponentBoards.remove(fromProcess);
+        repaint();
     }
 
     public void handleDeath(int fromProcess) {
@@ -509,6 +510,8 @@ public class Tetris extends JPanel {
         g.setColor(Color.red);
         g.fillRect(0, (26 * 4) - 2, 26 * 12, 2);
 
+        g.setColor(Color.white);
+        g.fillRect((26 * 12) + 10,0,1000,26*23);
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
                 g.setColor(well[i][j].color);
