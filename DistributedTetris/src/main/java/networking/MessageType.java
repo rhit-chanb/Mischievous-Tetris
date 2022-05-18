@@ -10,5 +10,7 @@ public enum MessageType {
     TETRIS_EVENT,
     UPDATE_BOARD_STATE,
     DEATH,
-    ATTACK
+    ATTACK,
+    START_RANDOM_EVENT,
+    PROPOSE
 }

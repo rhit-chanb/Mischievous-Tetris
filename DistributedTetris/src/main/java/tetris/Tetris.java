@@ -9,11 +9,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.Serial;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
@@ -22,6 +19,7 @@ public class Tetris extends JPanel {
     private final int softLockConstant = 2;
     private final List<Tetromino> nextPieces = new ArrayList<>();
     private final Map<Integer, TColor[][]> opponentBoards = new HashMap<>();
+    private final double RANDOM_EVENT_CHANCE = 0.2;
     public RealClient client;
     private Point pieceOrigin;
     private Tetromino currentPiece;
@@ -88,8 +86,22 @@ public class Tetris extends JPanel {
         }).start();
     }
 
+    public void attemptRandomEvent(){
+        Random rand = new Random();
+        double roll = rand.nextDouble();
+        if(roll <= this.RANDOM_EVENT_CHANCE){
+            if(this.client != null){
+                this.client.startRandomEvent();
+            }
+        }
+    }
+
     public void bindToClient(RealClient client) {
         this.client = client;
+    }
+
+    public void triggerRandomEvent(RandomEvent event){
+        //TODO: Implement
     }
 
     public void handleMessageEvent(String message) {

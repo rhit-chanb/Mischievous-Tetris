@@ -11,11 +11,8 @@ import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 import java.util.function.Supplier;
 
 public class RealClient {
@@ -25,10 +22,14 @@ public class RealClient {
     boolean active; // currently, unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
     Tetris underlying;
     int processID; // the id of this peer
+    private boolean choosingRandomEvent;
+    private ArrayList<Integer> proposals;
 
     public RealClient() {
         connections = new ArrayList<>();
         active = true;
+        choosingRandomEvent = false;
+        proposals = new ArrayList<>();
     }
 
     public static void main(String[] args) {
@@ -186,6 +187,22 @@ public class RealClient {
             }
         }
 
+        if(argList[0].equals(MessageType.START_RANDOM_EVENT.toString())){
+            choosingRandomEvent = active;
+            broadcast(MessageType.PROPOSE,active ? getRandomEventNum() : "100");
+        }
+        if(argList[0].equals(MessageType.PROPOSE.toString())){
+            if(active){
+                int eventNum = Integer.parseInt(argList[1]);
+                proposals.add(eventNum);
+                if(proposals.size() == connections.size()){
+                    //TODO: Decide!
+                    Collections.sort(proposals);
+                    underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
+                }
+            }
+        }
+
         if (message.startsWith(MessageType.HOST_ON.toString())) {
             String hostingAddr = argList[1];
             int hostingPort = Integer.parseInt(argList[2]);
@@ -253,6 +270,15 @@ public class RealClient {
             TetrisThread tetoThread = new TetrisThread(underlying);
             new Thread(tetoThread).start();
         }
+    }
+
+    public void startRandomEvent(){
+        if(!choosingRandomEvent){
+           broadcast(MessageType.START_RANDOM_EVENT,"");
+        }
+    }
+    public String getRandomEventNum(){
+        return Integer.toString((new Random()).nextInt(RandomEvent.values().length-1));
     }
 
     static class ConnectionThread implements Runnable {
