@@ -275,6 +275,7 @@ public class RealClient {
 
     public void propose(){
         choosingRandomEvent = active;
+        proposals.add(active ? Integer.parseInt(getRandomEventNum()) : 100);
         broadcast(MessageType.PROPOSE,active ? getRandomEventNum() : "100");
     }
 
