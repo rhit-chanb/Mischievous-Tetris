@@ -6,6 +6,9 @@ import java.util.Random;
 
 public enum RandomEvent {
     EVENT0(0),
+    EVENT1(1),
+    EVENT2(2),
+    EVENT3(3),
     NO_EVENT(100)
     ;
     public final int num;

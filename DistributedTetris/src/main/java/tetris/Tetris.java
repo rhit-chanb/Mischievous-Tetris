@@ -101,6 +101,7 @@ public class Tetris extends JPanel {
     }
 
     public void triggerRandomEvent(RandomEvent event){
+        System.out.println("Triggering RandomEvent " + event);
         //TODO: Implement
     }
 

@@ -83,6 +83,10 @@ public class RealClient {
                 client.startGame();
                 return false;
             });
+            commands.put("/random",() ->{
+                client.startRandomEvent();
+                return false;
+            });
             Supplier<Boolean> listCommand = () -> {
                 // list the peers we're currently connected to
                 System.out.println("Currently connected to: ");
@@ -188,19 +192,15 @@ public class RealClient {
         }
 
         if(argList[0].equals(MessageType.START_RANDOM_EVENT.toString())){
+
             propose();
         }
         if(argList[0].equals(MessageType.PROPOSE.toString())){
-            if(active && choosingRandomEvent){
+            if(choosingRandomEvent){
+                System.out.println("Adding proposal to list");
                 int eventNum = Integer.parseInt(argList[1]);
                 proposals.add(eventNum);
-                if(proposals.size() >= connections.size()){
-                    //TODO: Decide!
-                    Collections.sort(proposals);
-                    underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
-                    proposals = new ArrayList<>();
-                    choosingRandomEvent = false;
-                }
+                decide();
             }
         }
 
@@ -274,18 +274,44 @@ public class RealClient {
     }
 
     public void propose(){
-        choosingRandomEvent = active;
-        proposals.add(active ? Integer.parseInt(getRandomEventNum()) : 100);
-        broadcast(MessageType.PROPOSE,active ? getRandomEventNum() : "100");
+        choosingRandomEvent = true;
+        int proposal = this.underlying != null ? getRandomEventNum() : 100;
+        proposals.add(proposal);
+        System.out.println("I am proposing event " + proposal);
+        broadcast(MessageType.PROPOSE,Integer.toString(proposal));
+    }
+    public void decide(){
+        System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size()+1));
+        if(proposals.size() >= connections.size()+1){
+            for(int p : proposals){
+                System.out.print(p + " ");
+            }
+            System.out.println();
+            try{
+                Collections.sort(proposals);
+                System.out.println("Deciding on event " + RandomEvent.fromInt(proposals.get(0)));
+                if(this.underlying!=null) underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
+                proposals = new ArrayList<>();
+                choosingRandomEvent = false;
+            }
+            catch(ConcurrentModificationException e){
+                System.out.println("Already deciding somehow");
+            }
+        }
     }
 
     public void startRandomEvent(){
         if(!choosingRandomEvent){
+            System.out.println("Starting Random Event polling");
            broadcast(MessageType.START_RANDOM_EVENT,"");
+           propose();
+           decide();
         }
     }
-    public String getRandomEventNum(){
-        return Integer.toString((new Random()).nextInt(RandomEvent.values().length-1));
+
+
+    public int getRandomEventNum(){
+        return ((new Random()).nextInt(RandomEvent.values().length-1));
     }
 
     static class ConnectionThread implements Runnable {
