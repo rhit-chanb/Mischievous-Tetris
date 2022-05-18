@@ -188,17 +188,18 @@ public class RealClient {
         }
 
         if(argList[0].equals(MessageType.START_RANDOM_EVENT.toString())){
-            choosingRandomEvent = active;
-            broadcast(MessageType.PROPOSE,active ? getRandomEventNum() : "100");
+            propose();
         }
         if(argList[0].equals(MessageType.PROPOSE.toString())){
-            if(active){
+            if(active && choosingRandomEvent){
                 int eventNum = Integer.parseInt(argList[1]);
                 proposals.add(eventNum);
-                if(proposals.size() == connections.size()){
+                if(proposals.size() >= connections.size()){
                     //TODO: Decide!
                     Collections.sort(proposals);
                     underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
+                    proposals = new ArrayList<>();
+                    choosingRandomEvent = false;
                 }
             }
         }
@@ -270,6 +271,11 @@ public class RealClient {
             TetrisThread tetoThread = new TetrisThread(underlying);
             new Thread(tetoThread).start();
         }
+    }
+
+    public void propose(){
+        choosingRandomEvent = active;
+        broadcast(MessageType.PROPOSE,active ? getRandomEventNum() : "100");
     }
 
     public void startRandomEvent(){
