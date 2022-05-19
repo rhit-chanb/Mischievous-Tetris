@@ -16,14 +16,7 @@ import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
@@ -334,9 +327,8 @@ public class RealClient {
             }
             System.out.println();
             try {
-                Collections.sort(proposals);
-                System.out.println("Deciding on event " + RandomEvent.fromInt(proposals.get(0)));
-                if (this.underlying != null) underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
+                System.out.println("Deciding on event " + RandomEvent.fromInt(mostFrequent(proposals)));
+                if (this.underlying != null) underlying.triggerRandomEvent(RandomEvent.fromInt(mostFrequent(proposals)));
                 proposals = new ArrayList<>();
                 choosingRandomEvent = false;
             } catch (ConcurrentModificationException e) {
@@ -357,6 +349,26 @@ public class RealClient {
 
     public int getRandomEventNum() {
         return ((new Random()).nextInt(RandomEvent.values().length - 1));
+    }
+
+    static int mostFrequent(ArrayList<Integer> list) {
+        int result = 0;
+        int num = 0;
+        HashMap<Integer, Integer> freq = new HashMap<>();
+
+        for(Integer i : list){
+            if(freq.containsKey(i)){
+                freq.put(i,freq.get(i)+1);
+            }
+            else freq.put(i,1);
+        }
+        for(int i : freq.keySet()){
+            if(freq.get(i) > result){
+                result = freq.get(i);
+                num = i;
+            }
+        }
+        return num;
     }
 
     static class ConnectionThread implements Runnable {
