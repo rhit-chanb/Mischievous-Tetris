@@ -33,7 +33,7 @@ public class Tetris extends JPanel {
     public static final int GAME_TICK_MS = 1000;
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
-    private static final double RANDOM_EVENT_CHANCE = 0.2;
+    private static final double RANDOM_EVENT_CHANCE = 0.02;
     private final int softLockConstant = 2;
     private final List<Tetromino> nextPieces = new ArrayList<>();
     private final Map<Integer, TColor[][]> opponentBoards = new HashMap<>();
@@ -121,6 +121,7 @@ public class Tetris extends JPanel {
             case CLEAR_LINES -> {
                 deleteRow(21);
                 deleteRow(21);
+                sendBoardUpdate();
             }
             case CLEAR_VERTICAL_LINE -> {
                 //Choose random line from 1 - 11 to remove
@@ -160,6 +161,10 @@ public class Tetris extends JPanel {
         for (EnemyPiece p : attackQueue) {
             System.out.println(piece);
         }
+    }
+
+    private void sendBoardUpdate() {
+        this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
     }
 
     public void broadcastMessage(String message) {
@@ -373,7 +378,7 @@ public class Tetris extends JPanel {
         //  or maybe make a fake client
         //  client was null (maybe testing offline?)
 
-        this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
+        sendBoardUpdate();
 
         checkForTopOut();
         if (this.status == TGameStatus.PLAYING) {

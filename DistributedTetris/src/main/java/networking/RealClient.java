@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
 public class RealClient {
@@ -36,12 +37,14 @@ public class RealClient {
     int processID; // the id of this peer
     private boolean choosingRandomEvent;
     private ArrayList<Integer> proposals;
+    Semaphore lock;
 
     public RealClient() {
         connections = new ArrayList<>();
         active = true;
         choosingRandomEvent = false;
         proposals = new ArrayList<>();
+        lock = new Semaphore(1);
     }
 
     public static void main(String[] args) {
@@ -319,6 +322,11 @@ public class RealClient {
     }
 
     public void decide() {
+        try {
+            lock.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size() + 1));
         if (proposals.size() >= connections.size() + 1) {
             for (int p : proposals) {
@@ -335,6 +343,7 @@ public class RealClient {
                 System.out.println("Already deciding somehow");
             }
         }
+        lock.release();
     }
 
     public void startRandomEvent() {
