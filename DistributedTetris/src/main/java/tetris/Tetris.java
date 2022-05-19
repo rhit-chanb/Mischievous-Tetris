@@ -79,6 +79,7 @@ public class Tetris extends JPanel {
                 try {
                     Thread.sleep(1000);
                     game.dropDown();
+                    game.attemptRandomEvent();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
