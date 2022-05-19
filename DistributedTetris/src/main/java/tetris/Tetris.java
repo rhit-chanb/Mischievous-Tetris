@@ -21,12 +21,20 @@ import java.util.Random;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
+    public static final int STARTING_AMMO = 8;
+    public static final int BOARD_WIDTH_CELLS = 12;
+    public static final int BOARD_HEIGHT_CELLS = 24;
+    public static final int BOARD_HEIGHT_ONE_LESS = BOARD_HEIGHT_CELLS - 1;
+    public static final int CELL_SIZE = 26;
+    public static final int GRID_LINE_WIDTH = 1;
+    public static final int CELL_SIZE_PADDED = CELL_SIZE - GRID_LINE_WIDTH;
+    public static final int GAME_TICK_MS = 1000;
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
+    private static final double RANDOM_EVENT_CHANCE = 0.2;
     private final int softLockConstant = 2;
     private final List<Tetromino> nextPieces = new ArrayList<>();
     private final Map<Integer, TColor[][]> opponentBoards = new HashMap<>();
-    private final double RANDOM_EVENT_CHANCE = 0.2;
     public RealClient client;
     private Point pieceOrigin;
     private Tetromino currentPiece;
@@ -43,50 +51,26 @@ public class Tetris extends JPanel {
 
     }
 
-    @Deprecated(since = "Use RealClient instead") // probably bad Since usage?
-    public static void main(String[] args) {
+    public static void setUpGame(Tetris instance) {
         JFrame f = new JFrame("Mischievous Tetris");
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setSize(12 * 26 + 10, 26 * 23 + 25);
+        f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        int boardWidthPx = (BOARD_WIDTH_CELLS * CELL_SIZE) + 10;
+        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED;
+        f.setSize(boardWidthPx * 3, heightPx);
         f.setVisible(true);
 
-        final Tetris game = new Tetris();
-        game.init();
-        f.add(game);
+        instance.init();
+        f.add(instance);
 
-        // Keyboard controls
-        f.addKeyListener(new KeyListener() {
-            public void keyTyped(KeyEvent e) {
-            }
-
-            public void keyPressed(KeyEvent e) {
-                // TODO: read these from a config file?
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_J -> game.rotate(-1);
-                    case KeyEvent.VK_K -> game.rotate(+1);
-                    case KeyEvent.VK_L -> game.rotate(2);
-                    case KeyEvent.VK_A -> game.move(-1);
-                    case KeyEvent.VK_D -> game.move(+1);
-                    case KeyEvent.VK_S -> {
-                        game.dropDown();
-                        game.score += 1;
-                    }
-                    case KeyEvent.VK_SPACE -> game.dropToBottom();
-                    case KeyEvent.VK_R -> game.init();
-                }
-            }
-
-            public void keyReleased(KeyEvent e) {
-            }
-        });
+        f.addKeyListener(new TetrisKeyListener(instance));
 
         // Make the falling piece drop every second
         new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(1000);
-                    game.dropDown();
-                    game.attemptRandomEvent();
+                    Thread.sleep(GAME_TICK_MS);
+                    instance.dropDown();
+                    instance.attemptRandomEvent();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -94,10 +78,14 @@ public class Tetris extends JPanel {
         }).start();
     }
 
+    public static void main(String[] args) {
+        setUpGame(new Tetris());
+    }
+
     public void attemptRandomEvent() {
         Random rand = new Random();
         double roll = rand.nextDouble();
-        if (roll <= this.RANDOM_EVENT_CHANCE) {
+        if (roll <= RANDOM_EVENT_CHANCE) {
             if (this.client != null) {
                 this.client.startRandomEvent();
             }
@@ -160,7 +148,6 @@ public class Tetris extends JPanel {
         }
     }
 
-
     public void broadcastMessage(String message) {
         // more bulletproofing just in case the Tetris.Tetris game somehow isn't connected to a client?
         if (this.client != null) {
@@ -178,7 +165,6 @@ public class Tetris extends JPanel {
             System.err.println("Somehow not connected to a client?");
         }
     }
-
 
     public String BoardToString(TColor[][] board) {
         StringBuilder result = new StringBuilder();
@@ -198,7 +184,7 @@ public class Tetris extends JPanel {
     }
 
     public TColor[][] StringToBoard(String s) {
-        TColor[][] result = new TColor[12][24];
+        TColor[][] result = new TColor[BOARD_WIDTH_CELLS][BOARD_HEIGHT_CELLS];
         String[] rows = s.split(BOARD_ROW_SEPARATOR);
         int r = 0;
         for (String row : rows) {
@@ -212,9 +198,9 @@ public class Tetris extends JPanel {
 
     // Creates a border around the well and initializes the dropping piece
     public void init() {
-        well = new TColor[12][24];
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 23; j++) {
+        well = new TColor[BOARD_WIDTH_CELLS][BOARD_HEIGHT_CELLS];
+        for (int i = 0; i < BOARD_WIDTH_CELLS; i++) {
+            for (int j = 0; j < BOARD_HEIGHT_ONE_LESS; j++) {
                 if (i == 0 || i == 11 || j == 22) {
                     well[i][j] = TColor.BAR;
                 } else {
@@ -225,7 +211,7 @@ public class Tetris extends JPanel {
         this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
         this.attackQueue = new ArrayList<>();
         this.score = 0;
-        this.ammo = 8;
+        this.ammo = STARTING_AMMO;
         newPiece();
         this.status = TGameStatus.PLAYING;
 
@@ -332,7 +318,6 @@ public class Tetris extends JPanel {
         this.attacking = !this.attacking;
     }
 
-
     // Drops the piece one line or fixes it to the well if it can't drop
     public void dropDown() {
         if (this.status == TGameStatus.PLAYING) {
@@ -403,7 +388,6 @@ public class Tetris extends JPanel {
         }
     }
 
-
     public void checkForTopOut() {
         for (int i = 0; i < well.length; i++) {
             for (int j = 0; j < 4; j++) {
@@ -416,7 +400,6 @@ public class Tetris extends JPanel {
             }
         }
     }
-
 
     public void dropToBottom() {
 
@@ -512,17 +495,17 @@ public class Tetris extends JPanel {
         }
 
         for (Point p : currentPiece.inRotation(rotation)) {
-            g.fillRect((p.x + pieceOrigin.x) * 26,
-                    (p.y + checkTheoreticalPos()) * 26,
-                    25, 25);
+            g.fillRect((p.x + pieceOrigin.x) * CELL_SIZE,
+                    (p.y + checkTheoreticalPos()) * CELL_SIZE,
+                    CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
 
         g.setColor(currentPiece.tcolor.color);
         for (Point p : currentPiece.inRotation(rotation)) {
 
-            g.fillRect((p.x + pieceOrigin.x) * 26,
-                    (p.y + pieceOrigin.y) * 26,
-                    25, 25);
+            g.fillRect((p.x + pieceOrigin.x) * CELL_SIZE,
+                    (p.y + pieceOrigin.y) * CELL_SIZE,
+                    CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
     }
 
@@ -532,8 +515,8 @@ public class Tetris extends JPanel {
         }
         g.setColor(Color.red);
         int x = 13 - 5;
-        int y = 26 * 23;
-        int height = (this.attackQueue.size() * 26) + 26;
+        int y = CELL_SIZE * 23;
+        int height = (this.attackQueue.size() * CELL_SIZE) + CELL_SIZE;
 
         g.fillRect(x, y - height, 10, height);
 
@@ -544,16 +527,16 @@ public class Tetris extends JPanel {
     public void paintComponent(Graphics g) {
         // Paint the well
         Color boardBackground = g.getColor();
-        g.fillRect(0, 0, 26 * 12, 26 * 23);
+        g.fillRect(0, 0, CELL_SIZE * BOARD_WIDTH_CELLS, CELL_SIZE * BOARD_HEIGHT_ONE_LESS);
         g.setColor(Color.red);
-        g.fillRect(0, (26 * 4) - 2, 26 * 12, 2);
+        g.fillRect(0, (CELL_SIZE * 4) - 2, CELL_SIZE * BOARD_WIDTH_CELLS, 2);
 
         g.setColor(Color.white);
-        g.fillRect((26 * 12) + 10, 0, 1000, 26 * 23);
-        for (int i = 0; i < 12; i++) {
-            for (int j = 0; j < 23; j++) {
+        g.fillRect((CELL_SIZE * BOARD_WIDTH_CELLS) + 10, 0, 1000, CELL_SIZE * BOARD_HEIGHT_ONE_LESS);
+        for (int i = 0; i < BOARD_WIDTH_CELLS; i++) {
+            for (int j = 0; j < BOARD_HEIGHT_ONE_LESS; j++) {
                 g.setColor(well[i][j].color);
-                g.fillRect(26 * i, 26 * j, 25, 25);
+                g.fillRect(CELL_SIZE * i, CELL_SIZE * j, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
             }
         }
 
@@ -563,11 +546,11 @@ public class Tetris extends JPanel {
 
         int offset = 1;
         for (TColor[][] board : opponentBoards.values()) {
-            g.fillRect(offset * (312), 0, 26 * 12, 26 * 23);
-            for (int i = 0; i < 12; i++) {
-                for (int j = 0; j < 23; j++) {
+            g.fillRect(offset * (312), 0, CELL_SIZE * BOARD_WIDTH_CELLS, CELL_SIZE * BOARD_HEIGHT_ONE_LESS);
+            for (int i = 0; i < BOARD_WIDTH_CELLS; i++) {
+                for (int j = 0; j < BOARD_HEIGHT_ONE_LESS; j++) {
                     g.setColor(board[i][j].color);
-                    g.fillRect((26 * i) + offset * (312), 26 * j, 25, 25);
+                    g.fillRect((CELL_SIZE * i) + offset * (312), CELL_SIZE * j, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
                 }
             }
             offset++;
@@ -575,10 +558,10 @@ public class Tetris extends JPanel {
 
         // Display the score
         g.setColor(Color.WHITE);
-        g.drawString("score: " + score, 19 * 12, 25);
+        g.drawString("score: " + score, 19 * BOARD_WIDTH_CELLS, 25);
 
         g.setColor(Color.WHITE);
-        g.drawString("ammo: " + ammo, 19 * 12, 45);
+        g.drawString("ammo: " + ammo, 19 * BOARD_WIDTH_CELLS, 45);
 
         // Show if game over
         g.setColor(Color.red);
@@ -587,11 +570,40 @@ public class Tetris extends JPanel {
             Font gameOverFont = new Font("Sans Serif", Font.PLAIN, 24);
             g.setFont(gameOverFont);
 
-            g.drawString("GAME OVER", (int) (26 * 3.5), 26 * 12);
+            g.drawString("GAME OVER", (int) (CELL_SIZE * 3.5), CELL_SIZE * BOARD_WIDTH_CELLS);
         }
 
 
         // Draw the currently falling piece
         drawPiece(g);
+    }
+
+    static class TetrisKeyListener implements KeyListener {
+        private final Tetris game;
+
+        public TetrisKeyListener(Tetris game) {
+            this.game = game;
+        }
+
+        public void keyTyped(KeyEvent e) {
+        }
+
+        public void keyPressed(KeyEvent e) {
+            // TODO: read these from a config file?
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_J -> game.rotate(-1);
+                case KeyEvent.VK_K -> game.rotate(+1);
+                case KeyEvent.VK_L -> game.rotate(2);
+                case KeyEvent.VK_A -> game.move(-1);
+                case KeyEvent.VK_D -> game.move(+1);
+                case KeyEvent.VK_S -> game.dropDown();
+                case KeyEvent.VK_SPACE -> game.dropToBottom();
+                case KeyEvent.VK_R -> game.init();
+                case KeyEvent.VK_SHIFT -> game.toggleMode();
+            }
+        }
+
+        public void keyReleased(KeyEvent e) {
+        }
     }
 }
