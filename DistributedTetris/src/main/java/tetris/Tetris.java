@@ -11,6 +11,8 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,20 +53,32 @@ public class Tetris extends JPanel {
 
     }
 
-    public static void setUpGame(Tetris instance) {
-        JFrame f = new JFrame("Mischievous Tetris");
-        f.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+    public static void setUpGame(Tetris instance, RealClient client) {
+        JFrame frame = new JFrame("Mischievous Tetris" + ((client == null) ? " Standalone" : ""));
         int boardWidthPx = (BOARD_WIDTH_CELLS * CELL_SIZE) + 10;
         int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED;
-        f.setSize(boardWidthPx * 3, heightPx);
-        f.setVisible(true);
+        frame.setSize(boardWidthPx * 3, heightPx);
+        frame.setVisible(true);
 
         instance.init();
-        f.add(instance);
+        frame.add(instance);
 
-        f.addKeyListener(new TetrisKeyListener(instance));
+        frame.addKeyListener(new TetrisKeyListener(instance));
 
-        // Make the falling piece drop every second
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                frame.dispose();
+                if (client != null) {
+                    client.shutdownProcedure();
+                } else {
+                    System.exit(0);
+                }
+            }
+        });
+
+        // Game timer
         new Thread(() -> {
             while (true) {
                 try {
@@ -79,7 +93,7 @@ public class Tetris extends JPanel {
     }
 
     public static void main(String[] args) {
-        setUpGame(new Tetris());
+        setUpGame(new Tetris(), null);
     }
 
     public void attemptRandomEvent() {

@@ -23,15 +23,16 @@ public class Transceiver {
 
     public String receive() {
         if (isClosed) {
-            //System.out.println("Streams closed, cannot recv");
             return null;
         }
-        String message = "";
         try {
-            message = in.readLine();
-            //System.out.println("Transceiver received message: " + message);
+            String message = in.readLine();
             if (message == null || message.startsWith(MessageType.SHUTDOWN + " ")) {
-                System.out.println("Received shutdown message, contact " + contactID + " is exiting...");
+                if (message == null) {
+                    System.out.println("Received null-message from contact " + contactID + ", so disconnecting...");
+                } else {
+                    System.out.println("Received shutdown message, contact " + contactID + " is exiting...");
+                }
                 this.close(); // mark Transceiver as closed, this propagates because other logic looks at this boolean
                 return MessageType.SHUTDOWN.toString();
             } else {
@@ -51,13 +52,8 @@ public class Transceiver {
 
     public void send(MessageType type, String message) {
         if (isClosed) {
-            //System.out.println("Streams closed, cannot send");
             return;
         }
-
-        //System.out.println("Transceiver sending message: ");
-        //System.out.println(type + " " + message);
-
         out.println(type + " " + message);
     }
 

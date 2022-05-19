@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 public class RealClient {
 
+    static Transceiver toMatchmaker;
     List<Transceiver> connections;
     ServerSocket pseudoServerSocket; // socket that this client is exposing for connections by other peers
     boolean active; // currently, unused since everything cleans up nicely, might want to update it when we add tetris on top of or below this
@@ -70,7 +71,7 @@ public class RealClient {
             InputStream inStream = clientSocket.getInputStream();
 
 
-            Transceiver toMatchmaker = new Transceiver(-1, inStream, outStream); // Matchmaker gets a special value of -1 for it's ID
+            toMatchmaker = new Transceiver(-1, inStream, outStream); // Matchmaker gets a special value of -1 for it's ID
             Scanner scanner = new Scanner(System.in);
 
             Thread recvThread = new Thread(new ReceiverThread(toMatchmaker, client, clientSocket));
@@ -79,15 +80,7 @@ public class RealClient {
             // commands should return true if they want to break out of the loop
             Map<String, Supplier<Boolean>> commands = new HashMap<>();
             commands.put("/exit", () -> {
-                System.out.println("Exiting and signaling to close Transceiver objects"); // SCREAM OF DEATH
-                toMatchmaker.send(MessageType.SHUTDOWN, " shut");
-                // simple broadcast everything (permanent)
-                for (Transceiver toClient : client.connections) {
-                    toClient.send(MessageType.SHUTDOWN, "shut");
-                } //TODO: perhaps abstract this duplicated for loop into a method of RealClient, or maybe somewhere else
-                toMatchmaker.close();
-                // probably bad practice but whatever
-                System.exit(0);
+                client.shutdownProcedure();
                 return true;
             });
             commands.put("/start", () -> {
@@ -148,6 +141,19 @@ public class RealClient {
         }
     }
 
+    public void shutdownProcedure() {
+        System.out.println("Exiting and signaling to close Transceiver objects"); // SCREAM OF DEATH
+        toMatchmaker.send(MessageType.SHUTDOWN, " shut");
+        // simple broadcast everything (permanent)
+        for (Transceiver toClient : this.connections) {
+            toClient.send(MessageType.SHUTDOWN, "shut");
+        }
+        //TODO: perhaps abstract this duplicated for loop into a method of RealClient, or maybe somewhere else
+        toMatchmaker.close();
+        // probably bad practice but whatever
+        System.exit(0);
+    }
+
     // host on addr and port based on whatever Matchmaker sent you
     public void startHosting(String addr, int port) {
         System.out.println("Peer (Process ID: " + processID + ") is starting hosting on ip " + addr + ", port " + port);
@@ -182,7 +188,7 @@ public class RealClient {
             }
             case NORMAL -> {
                 // forward to underlying Tetris.Tetris object (if it exists)
-                String toForward = message.substring(7); // truncate off NORMAL header, Tetris.Tetris shouldn't care about that?
+                String toForward = message.substring(MessageType.NORMAL.toString().length()); // truncate off NORMAL header, Tetris.Tetris shouldn't care about that?
                 if (this.underlying != null) {
                     this.underlying.handleMessageEvent(toForward);
                 }
@@ -299,7 +305,7 @@ public class RealClient {
         if (this.underlying == null) {
             this.underlying = new Tetris();
             underlying.bindToClient(this);
-            TetrisThread tetoThread = new TetrisThread(underlying);
+            TetrisThread tetoThread = new TetrisThread(underlying, this);
             new Thread(tetoThread).start();
         }
     }
@@ -339,7 +345,6 @@ public class RealClient {
             decide();
         }
     }
-
 
     public int getRandomEventNum() {
         return ((new Random()).nextInt(RandomEvent.values().length - 1));
