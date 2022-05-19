@@ -161,79 +161,99 @@ public class RealClient {
         }
     }
 
-    // TODO: overload the crap out of this, probably the only method we care about really
     public void handleMessage(String message, int from) {
         System.out.println("Received networking.Message: " + message + " from process: " + from);
         if (message == null) {
             return;
         }
         String[] argList = message.split(" "); // assume all messages are delimited with spaces
-        // handle updating board
-        if (argList[0].equals(MessageType.UPDATE_BOARD_STATE.toString())) {
-            if (this.underlying != null) {
-                this.underlying.handleRecvBoard(argList[1], from);
+
+        if (argList.length < 1) {
+            System.err.println("Received message without a message type: '" + message + "' from " + from);
+            return;
+        }
+        MessageType type = MessageType.fromString(argList[0]);
+
+        switch (type) {
+            case SHUTDOWN -> {
+                if (this.underlying != null) {
+                    this.underlying.handleDisconnect(from);
+                }
             }
-        }
-        // handle another peer losing
-        if (argList[0].equals(MessageType.DEATH.toString())) {
-            if (this.underlying != null) {
-                this.underlying.handleDeath(from);
+            case NORMAL -> {
+                // forward to underlying Tetris.Tetris object (if it exists)
+                String toForward = message.substring(7); // truncate off NORMAL header, Tetris.Tetris shouldn't care about that?
+                if (this.underlying != null) {
+                    this.underlying.handleMessageEvent(toForward);
+                }
             }
-        }
-        // handle attacks
-        // message is of the form:
-        // ATTACK <x pos> <y pos> <rotation state> <piece type>
-        if (argList[0].equals(MessageType.ATTACK.toString())) {
-            if (this.underlying != null) {
-                int x = Integer.parseInt(argList[1]);
-                int y = Integer.parseInt(argList[2]);
-                Point pieceOrigin = new Point(x, y);
-                Rotation rotation = Rotation.fromInt(Integer.parseInt(argList[3]));
-                Tetromino pieceType = Tetromino.fromInt(Integer.parseInt(argList[4]));
-
-                EnemyPiece attackingPiece = new EnemyPiece(pieceOrigin, rotation, pieceType);
-
-                this.underlying.handleAttack(attackingPiece);
+            case BROADCAST -> {
+                // TODO no handling written yet
             }
-        }
-        if (argList[0].equals(MessageType.SHUTDOWN.toString())) {
-            if (this.underlying != null) {
-                this.underlying.handleDisconnect(from);
+            case HOST_ON -> {
+                String hostingAddr = argList[1];
+                int hostingPort = Integer.parseInt(argList[2]);
+                this.processID = Integer.parseInt(argList[3]);
+                this.startHosting(hostingAddr, hostingPort);
             }
-        }
+            case CONNECT_TO -> {
+                String joinAddr = argList[1];
+                int joinPort = Integer.parseInt(argList[2]);
+                int peerProcessID = Integer.parseInt(argList[3]);
 
-        if (argList[0].equals(MessageType.START_RANDOM_EVENT.toString())) {
-
-            propose();
-        }
-        if (argList[0].equals(MessageType.PROPOSE.toString())) {
-            if (choosingRandomEvent) {
-                System.out.println("Adding proposal to list");
-                int eventNum = Integer.parseInt(argList[1]);
-                proposals.add(eventNum);
-                decide();
+                this.joinPeer(joinAddr, joinPort, peerProcessID);
             }
-        }
+            case SET_PROC_ID -> {
+                int incomingID = Integer.parseInt(argList[1]);
+                handleProcIDSet(incomingID);
+            }
+            case TETRIS_EVENT -> {
+                // TODO no handling written yet for tetris events
+            }
+            case UPDATE_BOARD_STATE -> {
+                // handle updating board
+                if (this.underlying != null) {
+                    this.underlying.handleRecvBoard(argList[1], from);
+                }
+            }
+            case DEATH -> {
+                // handle another peer losing
+                if (this.underlying != null) {
+                    this.underlying.handleDeath(from);
+                }
+            }
+            case ATTACK -> {
+                // handle attacks
+                // message is of the form:
+                // ATTACK <x pos> <y pos> <rotation state> <piece type>
+                if (this.underlying != null) {
+                    int x = Integer.parseInt(argList[1]);
+                    int y = Integer.parseInt(argList[2]);
+                    Point pieceOrigin = new Point(x, y);
+                    Rotation rotation = Rotation.fromInt(Integer.parseInt(argList[3]));
+                    Tetromino pieceType = Tetromino.fromInt(Integer.parseInt(argList[4]));
 
-        if (message.startsWith(MessageType.HOST_ON.toString())) {
-            String hostingAddr = argList[1];
-            int hostingPort = Integer.parseInt(argList[2]);
-            this.processID = Integer.parseInt(argList[3]);
-            this.startHosting(hostingAddr, hostingPort);
-        } else if (message.startsWith(MessageType.CONNECT_TO.toString())) {
-            String joinAddr = argList[1];
-            int joinPort = Integer.parseInt(argList[2]);
-            int peerProcessID = Integer.parseInt(argList[3]);
+                    EnemyPiece attackingPiece = new EnemyPiece(pieceOrigin, rotation, pieceType);
 
-            this.joinPeer(joinAddr, joinPort, peerProcessID);
-        } else if (message.startsWith(MessageType.SET_PROC_ID.toString())) {
-            int incomingID = Integer.parseInt(argList[1]);
-            handleProcIDSet(incomingID);
-        } else if (message.startsWith(MessageType.NORMAL.toString())) {
-            // forward to underlying Tetris.Tetris object (if it exists)
-            String toForward = message.substring(7); // truncate off NORMAL header, Tetris.Tetris shouldn't care about that?
-            if (this.underlying != null) {
-                this.underlying.handleMessageEvent(toForward);
+                    this.underlying.handleAttack(attackingPiece);
+                }
+            }
+            case START_RANDOM_EVENT -> {
+                propose();
+            }
+            case PROPOSE -> {
+                if (choosingRandomEvent) {
+                    System.out.println("Adding proposal to list");
+                    int eventNum = Integer.parseInt(argList[1]);
+                    proposals.add(eventNum);
+                    decide();
+                }
+            }
+            case UNKNOWN -> {
+                System.err.println("Tried to handle unknown event " + message);
+            }
+            default -> {
+                System.err.println("No handling set up for message type " + type + " '" + message + "'");
             }
         }
     }
@@ -273,7 +293,7 @@ public class RealClient {
         }
     }
 
-    // creates an underlying Tetris.Tetris game and passes a reference to this class for its use
+    // creates an underlying Tetris game and passes a reference to this class for its use
     public void startGame() {
         // only initialize if a game is not already running
         if (this.underlying == null) {

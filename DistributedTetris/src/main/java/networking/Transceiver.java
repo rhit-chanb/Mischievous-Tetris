@@ -31,7 +31,7 @@ public class Transceiver {
             message = in.readLine();
             //System.out.println("Transceiver received message: " + message);
             if (message == null || message.startsWith(MessageType.SHUTDOWN + " ")) {
-                System.out.println("Received shutdown message, contact is exiting...");
+                System.out.println("Received shutdown message, contact " + contactID + " is exiting...");
                 this.close(); // mark Transceiver as closed, this propagates because other logic looks at this boolean
                 return MessageType.SHUTDOWN.toString();
             } else {

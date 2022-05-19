@@ -5,14 +5,19 @@ import networking.RealClient;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.Serial;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-
-import static tetris.RandomEvent.*;
+import java.util.Map;
+import java.util.Random;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
@@ -89,11 +94,11 @@ public class Tetris extends JPanel {
         }).start();
     }
 
-    public void attemptRandomEvent(){
+    public void attemptRandomEvent() {
         Random rand = new Random();
         double roll = rand.nextDouble();
-        if(roll <= this.RANDOM_EVENT_CHANCE){
-            if(this.client != null){
+        if (roll <= this.RANDOM_EVENT_CHANCE) {
+            if (this.client != null) {
                 this.client.startRandomEvent();
             }
         }
@@ -103,7 +108,7 @@ public class Tetris extends JPanel {
         this.client = client;
     }
 
-    public void triggerRandomEvent(RandomEvent event){
+    public void triggerRandomEvent(RandomEvent event) {
         System.out.println("Triggering RandomEvent: " + event);
         switch (event) {
             case ADD_AMMO -> ammo += 5;
@@ -132,7 +137,7 @@ public class Tetris extends JPanel {
         opponentBoards.put(fromProcess, StringToBoard(board));
     }
 
-    public void handleDisconnect(int fromProcess){
+    public void handleDisconnect(int fromProcess) {
         System.out.println(fromProcess + " has disconnected");
         opponentBoards.remove(fromProcess);
         repaint();
@@ -150,7 +155,7 @@ public class Tetris extends JPanel {
         System.out.println("adding to attack queue: " + piece);
 
         System.out.println("Remaining attack queue: ");
-        for(EnemyPiece p: attackQueue){
+        for (EnemyPiece p : attackQueue) {
             System.out.println(piece);
         }
     }
@@ -225,12 +230,13 @@ public class Tetris extends JPanel {
         this.status = TGameStatus.PLAYING;
 
     }
+
     // accidental on purpose recursion here
-    public boolean takeAttackFromQueue(){
+    public boolean takeAttackFromQueue() {
         boolean success = false;
-        if(!attackQueue.isEmpty()){
+        if (!attackQueue.isEmpty()) {
             EnemyPiece toTake = attackQueue.remove(0);
-            if(ammo > 0){
+            if (ammo > 0) {
                 ammo--;
                 return true;
             }
@@ -239,7 +245,7 @@ public class Tetris extends JPanel {
             System.out.println("Taking attack: " + toTake);
 
             System.out.println("Remaining attack queue: ");
-            for(EnemyPiece p: attackQueue){
+            for (EnemyPiece p : attackQueue) {
                 System.out.println(attackQueue);
             }
 
@@ -261,7 +267,7 @@ public class Tetris extends JPanel {
     // Put a new, random piece into the dropping position
     public void newPiece() {
         boolean attackTaken = takeAttackFromQueue();
-        if(this.status == TGameStatus.GAME_OVER){
+        if (this.status == TGameStatus.GAME_OVER) {
             return;
         }
 
@@ -321,7 +327,8 @@ public class Tetris extends JPanel {
         }
         repaint();
     }
-    public void toggleMode(){
+
+    public void toggleMode() {
         this.attacking = !this.attacking;
     }
 
@@ -376,7 +383,8 @@ public class Tetris extends JPanel {
             this.broadcastMessage(MessageType.DEATH, "");
         }
     }
-    public void fixToWellNoNewPiece(){
+
+    public void fixToWellNoNewPiece() {
         for (Point p : currentPiece.inRotation(rotation)) {
             well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
         }
@@ -390,7 +398,7 @@ public class Tetris extends JPanel {
 
         checkForTopOut();
 
-        if(this.status == TGameStatus.GAME_OVER){
+        if (this.status == TGameStatus.GAME_OVER) {
             this.broadcastMessage(MessageType.DEATH, "");
         }
     }
@@ -495,8 +503,8 @@ public class Tetris extends JPanel {
     private void drawPiece(Graphics g) {
         //paints the theoretical gray Tetromino (shadow piece)
         g.setColor(Color.GRAY);
-        if(this.ammo > 0){
-            if(this.attacking){
+        if (this.ammo > 0) {
+            if (this.attacking) {
                 g.setColor(new Color(242, 20, 8, 50)); // should be like transparent reddish
             } else {
                 g.setColor(new Color(0, 255, 0, 75)); // should be transparent greenish
@@ -519,15 +527,15 @@ public class Tetris extends JPanel {
     }
 
     private void drawDamageGauge(Graphics g) {
-        if(this.attackQueue.isEmpty()){
+        if (this.attackQueue.isEmpty()) {
             return;
         }
         g.setColor(Color.red);
-        int x = 13-5;
+        int x = 13 - 5;
         int y = 26 * 23;
         int height = (this.attackQueue.size() * 26) + 26;
 
-        g.fillRect(x, y-height, 10, height);
+        g.fillRect(x, y - height, 10, height);
 
 
     }
@@ -541,7 +549,7 @@ public class Tetris extends JPanel {
         g.fillRect(0, (26 * 4) - 2, 26 * 12, 2);
 
         g.setColor(Color.white);
-        g.fillRect((26 * 12) + 10,0,1000,26*23);
+        g.fillRect((26 * 12) + 10, 0, 1000, 26 * 23);
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 23; j++) {
                 g.setColor(well[i][j].color);
