@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Random;
 
 public enum RandomEvent {
-    EVENT0(0),
-    EVENT1(1),
-    EVENT2(2),
-    EVENT3(3),
+    ADD_AMMO(0),
+    REMOVE_AMMO(1),
+    CLEAR_LINES(2),
+    CLEAR_VERTICAL_LINE(3),
     NO_EVENT(100)
     ;
     public final int num;
@@ -19,7 +19,6 @@ public enum RandomEvent {
     public static RandomEvent fromInt(int i){
         return intToEvent.get(i);
     }
-
     static {
         intToEvent = new HashMap<>();
         for(RandomEvent event: RandomEvent.values()){

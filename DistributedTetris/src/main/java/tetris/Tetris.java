@@ -12,6 +12,8 @@ import java.io.Serial;
 import java.util.*;
 import java.util.List;
 
+import static tetris.RandomEvent.*;
+
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
     @Serial
@@ -79,6 +81,7 @@ public class Tetris extends JPanel {
                 try {
                     Thread.sleep(1000);
                     game.dropDown();
+                    game.attemptRandomEvent();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -101,8 +104,22 @@ public class Tetris extends JPanel {
     }
 
     public void triggerRandomEvent(RandomEvent event){
-        System.out.println("Triggering RandomEvent " + event);
-        //TODO: Implement
+        System.out.println("Triggering RandomEvent: " + event);
+        switch (event) {
+            case ADD_AMMO -> ammo += 5;
+            case REMOVE_AMMO -> {
+                ammo -= 5;
+                if (ammo < 0) ammo = 0;
+            }
+            case CLEAR_LINES -> {
+                deleteRow(21);
+                deleteRow(21);
+            }
+            case CLEAR_VERTICAL_LINE -> {
+                //Choose random line from 1 - 11 to remove
+            }
+
+        }
     }
 
     public void handleMessageEvent(String message) {
