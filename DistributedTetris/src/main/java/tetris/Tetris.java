@@ -31,6 +31,7 @@ public class Tetris extends JPanel {
     public static final int GRID_LINE_WIDTH = 1;
     public static final int CELL_SIZE_PADDED = CELL_SIZE - GRID_LINE_WIDTH;
     public static final int GAME_TICK_MS = 1000;
+    public static final int DEFAULT_MESSAGE_TIMEOUT = 5; // number of game ticks a message persists for, if no timeout period is given
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
     private static final double RANDOM_EVENT_CHANCE = 0.02;
@@ -48,6 +49,8 @@ public class Tetris extends JPanel {
     private ArrayList<EnemyPiece> attackQueue;
     private int ammo;
     private boolean attacking = false;
+    private String currentDisplayedMessage = "";
+    private int messageTimeout;
 
     public Tetris() {
 
@@ -56,7 +59,7 @@ public class Tetris extends JPanel {
     public static void setUpGame(Tetris instance, RealClient client) {
         JFrame frame = new JFrame("Mischievous Tetris" + ((client == null) ? " Standalone" : ""));
         int boardWidthPx = (BOARD_WIDTH_CELLS * CELL_SIZE) + 10;
-        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED;
+        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED + (CELL_SIZE/2);
         frame.setSize(boardWidthPx * 3, heightPx);
         frame.setVisible(true);
 
@@ -527,6 +530,19 @@ public class Tetris extends JPanel {
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
     }
+    private void drawMessageBox(Graphics g){
+        g.setColor(Color.WHITE);
+        g.fillRect(CELL_SIZE, (CELL_SIZE * BOARD_HEIGHT_CELLS) - (CELL_SIZE*2), (BOARD_WIDTH_CELLS - 2)*CELL_SIZE, CELL_SIZE); // draw the box for the message to appear in
+        if(this.currentDisplayedMessage != ""){
+            g.setColor(Color.BLACK);
+
+            Font prevFont = g.getFont();
+
+            Font announcerFont = new Font("Sans Serif", Font.BOLD, 18);
+            g.setFont(announcerFont);
+            g.drawString(currentDisplayedMessage, CELL_SIZE + (CELL_SIZE/2), (CELL_SIZE * BOARD_HEIGHT_CELLS) - (CELL_SIZE*2) + (CELL_SIZE/4));
+        }
+    }
 
     private void drawDamageGauge(Graphics g) {
         if (this.attackQueue.isEmpty()) {
@@ -538,6 +554,7 @@ public class Tetris extends JPanel {
         int height = (this.attackQueue.size() * CELL_SIZE) + CELL_SIZE;
 
         g.fillRect(x, y - height, 10, height);
+
 
 
     }
@@ -560,6 +577,8 @@ public class Tetris extends JPanel {
         }
 
         drawDamageGauge(g);
+
+
 
         g.setColor(boardBackground);
 
@@ -591,7 +610,6 @@ public class Tetris extends JPanel {
 
             g.drawString("GAME OVER", (int) (CELL_SIZE * 3.5), CELL_SIZE * BOARD_WIDTH_CELLS);
         }
-
 
         // Draw the currently falling piece
         drawPiece(g);
