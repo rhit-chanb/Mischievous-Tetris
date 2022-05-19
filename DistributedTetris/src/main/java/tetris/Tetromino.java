@@ -57,7 +57,8 @@ public enum Tetromino {
         this.shapeRotations = shapeRot;
         this.tcolor = tcolor;
     }
-    public static Tetromino fromInt(int index){
+
+    public static Tetromino fromInt(int index) {
         if (index < 0 || index >= ORDER.length) {
             throw new RuntimeException("Invalid type index " + index);
         }

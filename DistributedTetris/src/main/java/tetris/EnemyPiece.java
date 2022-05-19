@@ -1,6 +1,6 @@
 package tetris;
 
-import java.awt.*;
+import java.awt.Point;
 
 public class EnemyPiece {
     Point pieceOrigin;
@@ -13,7 +13,7 @@ public class EnemyPiece {
         this.pieceType = pieceType;
     }
 
-    public String toString(){
+    public String toString() {
         return "EnemyPiece, pieceOrigin={" + pieceOrigin.x + ", " + pieceOrigin.y + "} rotation: " + rotation + " type: " + pieceType;
     }
 }

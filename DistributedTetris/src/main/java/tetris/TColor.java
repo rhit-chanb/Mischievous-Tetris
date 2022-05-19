@@ -16,14 +16,26 @@ public enum TColor {
     BAR("|", Color.GRAY),
     UNKNOWN("N", Color.WHITE);
 
+    private final static Map<String, TColor> charToColor;
+
+    static {
+        charToColor = new HashMap<>();
+        for (TColor value : TColor.values()) {
+            charToColor.put(value.toString(), value);
+        }
+    }
+
     public final Color color;
     public final String stringRep;
-
-    private final static Map<String, TColor> charToColor;
 
     TColor(String stringRep, Color color) {
         this.stringRep = stringRep;
         this.color = color;
+    }
+
+    public static TColor fromString(String input) {
+        TColor found = charToColor.get(input);
+        return (found == null) ? TColor.UNKNOWN : found;
     }
 
     public Color toColor() {
@@ -33,17 +45,5 @@ public enum TColor {
     @Override
     public String toString() {
         return stringRep;
-    }
-
-    public static TColor fromString(String input) {
-        TColor found = charToColor.get(input);
-        return (found == null) ? TColor.UNKNOWN : found;
-    }
-
-    static {
-        charToColor = new HashMap<>();
-        for (TColor value : TColor.values()) {
-            charToColor.put(value.toString(),value);
-        }
     }
 }

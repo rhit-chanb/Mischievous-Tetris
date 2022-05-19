@@ -1,8 +1,13 @@
 package networking;
 
-import tetris.*;
+import tetris.EnemyPiece;
+import tetris.RandomEvent;
+import tetris.Rotation;
+import tetris.Tetris;
+import tetris.TetrisThread;
+import tetris.Tetromino;
 
-import java.awt.*;
+import java.awt.Point;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,8 +16,14 @@ import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Scanner;
 import java.util.function.Supplier;
 
 public class RealClient {
@@ -59,22 +70,22 @@ public class RealClient {
             InputStream inStream = clientSocket.getInputStream();
 
 
-            Transceiver tr = new Transceiver(-1, inStream, outStream); // Matchmaker gets a special value of -1 for it's ID
+            Transceiver toMatchmaker = new Transceiver(-1, inStream, outStream); // Matchmaker gets a special value of -1 for it's ID
             Scanner scanner = new Scanner(System.in);
 
-            Thread recvThread = new Thread(new ReceiverThread(tr, client, clientSocket));
+            Thread recvThread = new Thread(new ReceiverThread(toMatchmaker, client, clientSocket));
             recvThread.start();
 
             // commands should return true if they want to break out of the loop
             Map<String, Supplier<Boolean>> commands = new HashMap<>();
             commands.put("/exit", () -> {
                 System.out.println("Exiting and signaling to close Transceiver objects"); // SCREAM OF DEATH
-                tr.send(MessageType.SHUTDOWN, " shut");
+                toMatchmaker.send(MessageType.SHUTDOWN, " shut");
                 // simple broadcast everything (permanent)
-                for (Transceiver t : client.connections) {
-                    t.send(MessageType.SHUTDOWN, "shut");
+                for (Transceiver toClient : client.connections) {
+                    toClient.send(MessageType.SHUTDOWN, "shut");
                 } //TODO: perhaps abstract this duplicated for loop into a method of RealClient, or maybe somewhere else
-                tr.close();
+                toMatchmaker.close();
                 // probably bad practice but whatever
                 System.exit(0);
                 return true;
@@ -83,7 +94,7 @@ public class RealClient {
                 client.startGame();
                 return false;
             });
-            commands.put("/random",() ->{
+            commands.put("/random", () -> {
                 client.startRandomEvent();
                 return false;
             });
@@ -122,10 +133,10 @@ public class RealClient {
                     }
                 } else {
                     System.out.println("Sending string: " + entry);
-                    tr.send(MessageType.NORMAL, entry);
+                    toMatchmaker.send(MessageType.NORMAL, entry);
                     // another simple broadcast everything (temporary)
-                    for (Transceiver t : client.connections) {
-                        t.send(MessageType.NORMAL, entry);
+                    for (Transceiver toClient : client.connections) {
+                        toClient.send(MessageType.NORMAL, entry);
                     }
                 }
             }
@@ -164,7 +175,7 @@ public class RealClient {
             }
         }
         // handle another peer losing
-        if (argList[0].equals(MessageType.DEATH.toString())){
+        if (argList[0].equals(MessageType.DEATH.toString())) {
             if (this.underlying != null) {
                 this.underlying.handleDeath(from);
             }
@@ -172,7 +183,7 @@ public class RealClient {
         // handle attacks
         // message is of the form:
         // ATTACK <x pos> <y pos> <rotation state> <piece type>
-        if (argList[0].equals(MessageType.ATTACK.toString())){
+        if (argList[0].equals(MessageType.ATTACK.toString())) {
             if (this.underlying != null) {
                 int x = Integer.parseInt(argList[1]);
                 int y = Integer.parseInt(argList[2]);
@@ -185,18 +196,18 @@ public class RealClient {
                 this.underlying.handleAttack(attackingPiece);
             }
         }
-        if(argList[0].equals(MessageType.SHUTDOWN.toString())){
-            if(this.underlying != null){
+        if (argList[0].equals(MessageType.SHUTDOWN.toString())) {
+            if (this.underlying != null) {
                 this.underlying.handleDisconnect(from);
             }
         }
 
-        if(argList[0].equals(MessageType.START_RANDOM_EVENT.toString())){
+        if (argList[0].equals(MessageType.START_RANDOM_EVENT.toString())) {
 
             propose();
         }
-        if(argList[0].equals(MessageType.PROPOSE.toString())){
-            if(choosingRandomEvent){
+        if (argList[0].equals(MessageType.PROPOSE.toString())) {
+            if (choosingRandomEvent) {
                 System.out.println("Adding proposal to list");
                 int eventNum = Integer.parseInt(argList[1]);
                 proposals.add(eventNum);
@@ -273,45 +284,45 @@ public class RealClient {
         }
     }
 
-    public void propose(){
+    public void propose() {
         choosingRandomEvent = true;
         int proposal = this.underlying != null ? getRandomEventNum() : 100;
         proposals.add(proposal);
         System.out.println("I am proposing event " + proposal);
-        broadcast(MessageType.PROPOSE,Integer.toString(proposal));
+        broadcast(MessageType.PROPOSE, Integer.toString(proposal));
     }
-    public void decide(){
-        System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size()+1));
-        if(proposals.size() >= connections.size()+1){
-            for(int p : proposals){
+
+    public void decide() {
+        System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size() + 1));
+        if (proposals.size() >= connections.size() + 1) {
+            for (int p : proposals) {
                 System.out.print(p + " ");
             }
             System.out.println();
-            try{
+            try {
                 Collections.sort(proposals);
                 System.out.println("Deciding on event " + RandomEvent.fromInt(proposals.get(0)));
-                if(this.underlying!=null) underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
+                if (this.underlying != null) underlying.triggerRandomEvent(RandomEvent.fromInt(proposals.get(0)));
                 proposals = new ArrayList<>();
                 choosingRandomEvent = false;
-            }
-            catch(ConcurrentModificationException e){
+            } catch (ConcurrentModificationException e) {
                 System.out.println("Already deciding somehow");
             }
         }
     }
 
-    public void startRandomEvent(){
-        if(!choosingRandomEvent){
+    public void startRandomEvent() {
+        if (!choosingRandomEvent) {
             System.out.println("Starting Random Event polling");
-           broadcast(MessageType.START_RANDOM_EVENT,"");
-           propose();
-           decide();
+            broadcast(MessageType.START_RANDOM_EVENT, "");
+            propose();
+            decide();
         }
     }
 
 
-    public int getRandomEventNum(){
-        return ((new Random()).nextInt(RandomEvent.values().length-1));
+    public int getRandomEventNum() {
+        return ((new Random()).nextInt(RandomEvent.values().length - 1));
     }
 
     static class ConnectionThread implements Runnable {
