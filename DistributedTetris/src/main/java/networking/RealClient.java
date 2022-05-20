@@ -31,6 +31,7 @@ public class RealClient {
     private boolean choosingRandomEvent;
     private ArrayList<Integer> proposals;
     Semaphore lock;
+    static Map<String, Supplier<Boolean>> commands;
 
     public RealClient() {
         connections = new ArrayList<>();
@@ -38,6 +39,12 @@ public class RealClient {
         choosingRandomEvent = false;
         proposals = new ArrayList<>();
         lock = new Semaphore(1);
+    }
+
+    public static boolean displayHelp() {
+        System.out.println("Available commands: " + commands.keySet());
+        System.out.println("Anything not in this list will be sent as a raw message (for testing)");
+        return false;
     }
 
     public static void main(String[] args) {
@@ -74,7 +81,7 @@ public class RealClient {
             recvThread.start();
 
             // commands should return true if they want to break out of the loop
-            Map<String, Supplier<Boolean>> commands = new HashMap<>();
+            commands = new HashMap<>();
             commands.put("/exit", () -> {
                 client.shutdownProcedure();
                 return true;
@@ -100,11 +107,9 @@ public class RealClient {
             };
             commands.put("/list", listCommand);
             commands.put("/ls", listCommand);
-            commands.put("help", () -> {
-                System.out.println("Available commands: " + commands.keySet());
-                System.out.println("Anything not in this list will be sent as a raw message (for testing)");
-                return false;
-            });
+            commands.put("help", RealClient::displayHelp);
+
+            displayHelp();
 
             // theoretically speaking we can technically treat the matchmaker just the same as any other peer
             // double edged sword, bad peers could try to force you to do bad CONNECT_TO and HOST_ON commands that make you crash :(
@@ -164,7 +169,7 @@ public class RealClient {
     }
 
     public void handleMessage(String message, int from) {
-        System.out.println("Received networking.Message: " + message + " from process: " + from);
+//        System.out.println("Received networking.Message: " + message + " from process: " + from);
         if (message == null) {
             return;
         }
@@ -245,7 +250,7 @@ public class RealClient {
             }
             case PROPOSE -> {
                 if (choosingRandomEvent) {
-                    System.out.println("Adding proposal to list");
+//                    System.out.println("Adding proposal to list");
                     int eventNum = Integer.parseInt(argList[1]);
                     proposals.add(eventNum);
                     decide();
@@ -303,6 +308,7 @@ public class RealClient {
             underlying.bindToClient(this);
             TetrisThread tetoThread = new TetrisThread(underlying, this);
             new Thread(tetoThread).start();
+            System.out.println("Starting...");
         }
     }
 
@@ -310,7 +316,7 @@ public class RealClient {
         choosingRandomEvent = true;
         int proposal = this.underlying != null ? getRandomEventNum() : 100;
         proposals.add(proposal);
-        System.out.println("I am proposing event " + proposal);
+//        System.out.println("I am proposing event " + proposal);
         broadcast(MessageType.PROPOSE, Integer.toString(proposal));
     }
 
@@ -320,15 +326,15 @@ public class RealClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size() + 1));
+//        System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size() + 1));
         if (proposals.size() >= connections.size() + 1) {
             try {
-                System.out.println("Deciding on event " + RandomEvent.fromInt(mostFrequent(proposals)));
+//                System.out.println("Deciding on event " + RandomEvent.fromInt(mostFrequent(proposals)));
                 if (this.underlying != null) underlying.triggerRandomEvent(RandomEvent.fromInt(mostFrequent(proposals)));
                 proposals = new ArrayList<>();
                 choosingRandomEvent = false;
             } catch (ConcurrentModificationException e) {
-                System.out.println("Already deciding somehow");
+                System.err.println("Already deciding somehow");
             }
         }
         lock.release();
@@ -336,7 +342,7 @@ public class RealClient {
 
     public void startRandomEvent() {
         if (!choosingRandomEvent) {
-            System.out.println("Starting Random Event polling");
+//            System.out.println("Starting Random Event polling");
             broadcast(MessageType.START_RANDOM_EVENT, "");
             propose();
             decide();
@@ -420,13 +426,8 @@ public class RealClient {
                 this.client.handleMessage(message, tr.contactID); // adding source ID, but not doing anything with it for now
             }
             int processID = tr.contactID;
-            System.out.println("Detected dead Transceiver...");
-            System.out.println("Receiver thread closing...");
-            System.out.println("Removing Transceiver from connections array");
-            this.client.connections.remove(tr); // when aforementioned boolean in tr is read as true, remove it from arraylist
-
-            // TODO: @DAVID also remove whatever board is associated with processID
-
+            System.out.println("Detected dead Transceiver... closing it.");
+            this.client.connections.remove(tr);
 
             try {
                 this.pseudoClientSocket.close(); //properly take care of the loose socket

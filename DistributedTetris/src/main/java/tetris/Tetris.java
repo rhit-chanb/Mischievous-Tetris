@@ -184,8 +184,6 @@ public class Tetris extends JPanel {
     private void dropSandPiece() {
         int x = new Random().nextInt(RIGHTMOST_PLAYABLE_X - LEFTMOST_PLAYABLE_X) + LEFTMOST_PLAYABLE_X;
         int dropY = checkTheoreticalPos(Tetromino.SAND, Rotation._0, x, 0);
-        System.out.println("Sand will be at x " + x + " y " + dropY);
-
         // write sand (it's 1x1 now, but this can support bigger sand if we do that)
         for (Point p : Tetromino.SAND.inRotation(Rotation._0)) {
             well[x + p.x][dropY + p.y] = Tetromino.SAND.tcolor;
@@ -193,12 +191,12 @@ public class Tetris extends JPanel {
     }
 
     public void handleMessageEvent(String message) {
-        System.out.println("TetrisGame received message from client layer: " + message);
+//        System.out.println("TetrisGame received message from client layer: " + message);
         // TODO: expand to do cooler things to the tetris game instead of just printing to console
     }
 
     public void handleRecvBoard(String board, int fromProcess) {
-        System.out.println("Received a board update from " + fromProcess);
+//        System.out.println("Received a board update from " + fromProcess);
         opponentBoards.put(fromProcess, StringToBoard(board));
     }
 
@@ -221,9 +219,9 @@ public class Tetris extends JPanel {
 
         //System.out.println("adding to attack queue: " + piece);
         //System.out.println("Remaining attack queue: ");
-        for (EnemyPiece p : attackQueue) {
-            System.out.println(piece);
-        }
+//        for (EnemyPiece p : attackQueue) {
+//            System.out.println(piece);
+//        }
     }
 
     private void sendBoardUpdate() {
@@ -231,12 +229,7 @@ public class Tetris extends JPanel {
     }
 
     public void broadcastMessage(String message) {
-        // more bulletproofing just in case the Tetris.Tetris game somehow isn't connected to a client?
-        if (this.client != null) {
-            this.client.broadcast(MessageType.TETRIS_EVENT, message);
-        } else {
-            System.err.println("Somehow not connected to a client?");
-        }
+        broadcastMessage(MessageType.TETRIS_EVENT, message);
     }
 
     public void broadcastMessage(MessageType type, String message) {
@@ -310,10 +303,9 @@ public class Tetris extends JPanel {
             }
 
             System.out.println("Taking attack: " + toTake);
-
             System.out.println("Remaining attack queue: ");
             for (EnemyPiece p : attackQueue) {
-                System.out.println(attackQueue);
+                System.out.println("\t" + attackQueue);
             }
 
             pieceOrigin = toTake.pieceOrigin;
