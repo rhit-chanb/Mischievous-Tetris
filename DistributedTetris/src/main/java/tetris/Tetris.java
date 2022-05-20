@@ -514,6 +514,14 @@ public class Tetris extends JPanel {
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
 
+
+        if(pieceOrigin.y % 2 == 0){
+            g.setColor(new Color(128, 0, 0, 200)); // piece origin(for bombing)
+            g.fillRect((pieceOrigin.x * CELL_SIZE) + CELL_SIZE, (checkTheoreticalPos() * CELL_SIZE) + CELL_SIZE, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
+        }
+
+
+
         g.setColor(currentPiece.tcolor.color);
         for (Point p : currentPiece.inRotation(rotation)) {
 
