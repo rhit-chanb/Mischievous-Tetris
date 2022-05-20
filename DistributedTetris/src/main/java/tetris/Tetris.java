@@ -449,6 +449,14 @@ public class Tetris extends JPanel {
 
     }
 
+    public void dropToBottomAndBomb(){
+        if(bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5) {
+            int newY = checkTheoreticalPos();
+            pieceOrigin.y = newY;
+            bombBoard();
+        }
+    }
+
     public void deleteRow(int row) {
         for (int j = row - 1; j > 0; j--) {
             for (int i = 1; i < 11; i++) {
@@ -737,6 +745,7 @@ public class Tetris extends JPanel {
                 case KeyEvent.VK_R -> game.init();
                 case KeyEvent.VK_SHIFT -> game.toggleMode();
                 case KeyEvent.VK_Q -> game.bombBoard();
+                case KeyEvent.VK_E -> game.dropToBottomAndBomb();
             }
         }
 
