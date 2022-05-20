@@ -232,12 +232,6 @@ public class Tetris extends JPanel {
         attackQueueLock.release();
 
         setCurrentDisplayedMessage("Attack from P" + from, 1);
-
-        //System.out.println("adding to attack queue: " + piece);
-        //System.out.println("Remaining attack queue: ");
-//        for (EnemyPiece p : attackQueue) {
-//            System.out.println(piece);
-//        }
     }
 
     private void sendBoardUpdate() {
@@ -327,7 +321,7 @@ public class Tetris extends JPanel {
             System.out.println("Taking attack: " + toTake);
             System.out.println("Remaining attack queue: ");
             for (EnemyPiece p : attackQueue) {
-                System.out.println("\t" + attackQueue);
+                System.out.println("\t" + p);
             }
             attackQueueLock.release();
             setCurrentDisplayedMessage("RECEIVED AN ATTACK!", 2);
