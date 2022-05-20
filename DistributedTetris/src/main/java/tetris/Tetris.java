@@ -610,12 +610,12 @@ public class Tetris extends JPanel {
 
 
         Point bombPosition = pieceOrigin;
-        bombPosition.x = bombPosition.x + 1;
-        bombPosition.y = bombPosition.y + 1;
+        bombPosition.x = bombPosition.x - 1;
+        bombPosition.y = bombPosition.y - 1;
 
         for(int r = bombPosition.y; r < bombPosition.y + 5; r++){
             for(int c = bombPosition.x; c < bombPosition.x + 5; c++){
-                System.out.println("r" + r + " c " + c);
+                //System.out.println("r" + r + " c " + c);
                 if(!outOfBounds(c, r)){
                     //System.out.println("Hereeeeeeeeeeeeeeee");
                     well[c][r] = TColor.OPEN;
