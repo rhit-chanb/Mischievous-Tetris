@@ -237,7 +237,7 @@ public class RealClient {
 
                     EnemyPiece attackingPiece = new EnemyPiece(pieceOrigin, rotation, pieceType);
 
-                    this.underlying.handleAttack(attackingPiece);
+                    this.underlying.handleAttack(attackingPiece, from);
                 }
             }
             case START_RANDOM_EVENT -> {

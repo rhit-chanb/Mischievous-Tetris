@@ -120,7 +120,8 @@ public class Tetris extends JPanel {
     }
 
     public void triggerRandomEvent(RandomEvent event) {
-        System.out.println("Triggering RandomEvent: " + event);
+        //System.out.println("Triggering RandomEvent: " + event);
+        setCurrentDisplayedMessage("Random Event: " + event);
         switch (event) {
             case ADD_AMMO -> ammo += 5;
             case REMOVE_AMMO -> {
@@ -166,12 +167,13 @@ public class Tetris extends JPanel {
         //TODO: other death related things
     }
 
-    public void handleAttack(EnemyPiece piece) {
+    public void handleAttack(EnemyPiece piece, int from) {
         this.attackQueue.add(piece);
 
-        System.out.println("adding to attack queue: " + piece);
+        setCurrentDisplayedMessage("Attack from P" + from, 1);
 
-        System.out.println("Remaining attack queue: ");
+        //System.out.println("adding to attack queue: " + piece);
+        //System.out.println("Remaining attack queue: ");
         for (EnemyPiece p : attackQueue) {
             System.out.println(piece);
         }
