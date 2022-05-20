@@ -603,7 +603,7 @@ public class Tetris extends JPanel {
 
     private void drawMessageBox(Graphics g){
         g.setColor(Color.WHITE);
-        g.fillRect(CELL_SIZE, (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)), (BOARD_WIDTH_CELLS - 2)*CELL_SIZE, (CELL_SIZE*3)/2); // draw the box for the message to appear in
+        g.fillRect(CELL_SIZE, (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)), (2*BOARD_WIDTH_CELLS - 2)*CELL_SIZE, (CELL_SIZE*3)/2); // draw the box for the message to appear in
         if(this.currentDisplayedMessage != ""){
             g.setColor(Color.BLACK);
 
