@@ -36,6 +36,7 @@ public class Tetris extends JPanel {
     public static final int GAME_TICK_MS = 1000;
     public static final int DEFAULT_MESSAGE_TIMEOUT = 5; // number of game ticks a message persists for, if no timeout period is given
     public static final int BOMB_COOLDOWN_LENGTH = 15;
+    public static final int BOMB_AMMO_COST = 5;
     public static final int AMMO_COST_COOLDOWN_LENGTH = 5;
     public static final int MAX_AMMO_AMT = 20;
     public static final int SAND_EVENT_NUM_PIECES = 7;
@@ -626,9 +627,13 @@ public class Tetris extends JPanel {
     }
 
     private void drawMessageBox(Graphics g) {
+        // draw the box for the message to appear in (erases old message)
         g.setColor(Color.WHITE);
-        g.fillRect(CELL_SIZE, (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)), (BOARD_WIDTH_CELLS - 2) * CELL_SIZE, (CELL_SIZE * 3) / 2); // draw the box for the message to appear in
-        if (this.currentDisplayedMessage != "") {
+        g.fillRect(CELL_SIZE,
+                (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)),
+                (2 * BOARD_WIDTH_CELLS - 2) * CELL_SIZE,
+                (CELL_SIZE * 3) / 2);
+        if (!this.currentDisplayedMessage.isEmpty()) {
             g.setColor(Color.BLACK);
 
             Font prevFont = g.getFont();
@@ -654,10 +659,14 @@ public class Tetris extends JPanel {
     }
 
     private void drawAmmoGauge(Graphics g) {
-        if (this.ammo == 0) {
+        if (this.ammo <= STARTING_AMMO) {
             return;
         }
-        g.setColor(Color.orange);
+        if (this.ammo == MAX_AMMO_AMT) {
+            g.setColor(new Color(134, 255, 94));
+        } else {
+            g.setColor(Color.orange);
+        }
         int x = CELL_SIZE * BOARD_WIDTH_CELLS - (3 * CELL_SIZE / 4);
         int y = CELL_SIZE * 23;
         int height = (int) (((double) this.ammo / 2) * CELL_SIZE);
@@ -710,6 +719,9 @@ public class Tetris extends JPanel {
         g.setColor(Color.WHITE);
         g.drawString("ammo: " + ammo, 19 * BOARD_WIDTH_CELLS, 45);
 
+        // Draw the currently falling piece
+        drawPiece(g);
+
         // Show if game over
         g.setColor(Color.red);
 
@@ -719,9 +731,6 @@ public class Tetris extends JPanel {
 
             g.drawString("GAME OVER", (int) (CELL_SIZE * 3.5), CELL_SIZE * BOARD_WIDTH_CELLS);
         }
-
-        // Draw the currently falling piece
-        drawPiece(g);
     }
 
     public void bombBoard() {
@@ -729,17 +738,17 @@ public class Tetris extends JPanel {
         //Other process must call clear line for sand
         if (bombCooldown < BOMB_COOLDOWN_LENGTH) {
             //System.out.println("Bomb on cooldown");
-            setCurrentDisplayedMessage("BOMB ON COOLDOWN!", 2);
+            setCurrentDisplayedMessage("BOMB ON COOLDOWN! (SPENDING AMMO)", 2);
         }
 
         if (bombCooldown >= BOMB_COOLDOWN_LENGTH) {
             bombCooldown = 0;
         } else {
-            if (ammo < 5) {
+            if (ammo < BOMB_AMMO_COST) {
                 setCurrentDisplayedMessage("NOT ENOUGH AMMO FOR BOMB!", 2);
                 return;
             }
-            ammo -= 5;
+            ammo -= BOMB_AMMO_COST;
         }
 
 
@@ -800,7 +809,6 @@ public class Tetris extends JPanel {
                 case KeyEvent.VK_SPACE -> game.dropToBottom();
                 case KeyEvent.VK_R -> game.init();
                 case KeyEvent.VK_SHIFT -> game.toggleMode();
-                case KeyEvent.VK_SEMICOLON -> game.dropSandEvent();
                 case KeyEvent.VK_Q -> game.bombBoard();
                 case KeyEvent.VK_E -> game.dropToBottomAndBomb();
             }
