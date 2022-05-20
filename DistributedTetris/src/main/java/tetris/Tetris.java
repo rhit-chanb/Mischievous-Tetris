@@ -602,14 +602,14 @@ public class Tetris extends JPanel {
 
 
         Point bombPosition = pieceOrigin;
-        bombPosition.x = bombPosition.x - 2;
-        bombPosition.y = bombPosition.y + 2;
+        bombPosition.x = bombPosition.x + 1;
+        bombPosition.y = bombPosition.y + 1;
 
         for(int r = bombPosition.y; r < bombPosition.y + 5; r++){
             for(int c = bombPosition.x; c < bombPosition.x + 5; c++){
                 System.out.println("r" + r + " c " + c);
                 if(!outOfBounds(c, r)){
-                    System.out.println("Hereeeeeeeeeeeeeeee");
+                    //System.out.println("Hereeeeeeeeeeeeeeee");
                     well[c][r] = TColor.OPEN;
                 }
             }
@@ -618,8 +618,9 @@ public class Tetris extends JPanel {
 
     }
 
+
     public boolean outOfBounds(int xloc, int yloc){
-        System.out.println("Yoooooooooooooooo");
+        //System.out.println("Yoooooooooooooooo");
         return xloc <= 0 || xloc >= 11 || yloc >= 22;
 
     }
