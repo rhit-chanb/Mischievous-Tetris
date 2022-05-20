@@ -14,12 +14,20 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.Serial;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
     public static final int STARTING_AMMO = 8;
     public static final int BOARD_WIDTH_CELLS = 12;
+    public static final int LEFTMOST_PLAYABLE_X = 1;
+    public static final int RIGHTMOST_PLAYABLE_X = BOARD_WIDTH_CELLS - 1;
     public static final int BOARD_HEIGHT_CELLS = 24;
     public static final int BOARD_HEIGHT_ONE_LESS = BOARD_HEIGHT_CELLS - 1;
     public static final int CELL_SIZE = 26;
@@ -30,7 +38,7 @@ public class Tetris extends JPanel {
     public static final int BOMB_COOLDOWN_LENGTH = 15;
     public static final int AMMO_COST_COOLDOWN_LENGTH = 5;
     public static final int MAX_AMMO_AMT = 20;
-
+    public static final int SAND_EVENT_NUM_PIECES = 7;
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
     private static final double RANDOM_EVENT_CHANCE = 0.02;
@@ -54,15 +62,13 @@ public class Tetris extends JPanel {
     private int AMMO_COST = 2;
     private int ammoCostCooldown;
 
-
     public Tetris() {
-
     }
 
     public static void setUpGame(Tetris instance, RealClient client) {
         JFrame frame = new JFrame("Mischievous Tetris" + ((client == null) ? " Standalone" : ""));
         int boardWidthPx = (BOARD_WIDTH_CELLS * CELL_SIZE) + 10;
-        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED + ((5*CELL_SIZE)/2);
+        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED + ((5 * CELL_SIZE) / 2);
         frame.setSize(boardWidthPx * 3, heightPx);
         frame.setVisible(true);
 
@@ -136,8 +142,8 @@ public class Tetris extends JPanel {
             case CLEAR_VERTICAL_LINE -> {
                 //Choose random line from 1 - 11 to remove
                 Random rand = new Random();
-                int roll = rand.nextInt(11)+1;
-                for(int i = 0 ; i < 22; i++){
+                int roll = rand.nextInt(11) + 1;
+                for (int i = 0; i < 22; i++) {
                     well[roll][i] = TColor.OPEN;
                 }
             }
@@ -153,13 +159,35 @@ public class Tetris extends JPanel {
                             attackQueue.remove(i);
                         }
                     }
-                }
-                catch(ConcurrentModificationException e){
+                } catch (ConcurrentModificationException e) {
                     setCurrentDisplayedMessage("No Reduced piece queue!", 3);
                 }
             }
             case MAX_AMMO -> ammo = MAX_AMMO_AMT;
+            case SAND_DROP -> {
+                dropSandEvent();
+            }
+            case NO_EVENT -> {
+            }
+        }
+    }
 
+    private void dropSandEvent() {
+        for (int i = 0; i < SAND_EVENT_NUM_PIECES; i++) {
+            dropSandPiece();
+        }
+        clearRows();
+        sendBoardUpdate();
+    }
+
+    private void dropSandPiece() {
+        int x = new Random().nextInt(RIGHTMOST_PLAYABLE_X - LEFTMOST_PLAYABLE_X) + LEFTMOST_PLAYABLE_X;
+        int dropY = checkTheoreticalPos(Tetromino.SAND, Rotation._0, x, 0);
+        System.out.println("Sand will be at x " + x + " y " + dropY);
+
+        // write sand (it's 1x1 now, but this can support bigger sand if we do that)
+        for (Point p : Tetromino.SAND.inRotation(Rotation._0)) {
+            well[x + p.x][dropY + p.y] = Tetromino.SAND.tcolor;
         }
     }
 
@@ -254,7 +282,7 @@ public class Tetris extends JPanel {
         well = new TColor[BOARD_WIDTH_CELLS][BOARD_HEIGHT_CELLS];
         for (int i = 0; i < BOARD_WIDTH_CELLS; i++) {
             for (int j = 0; j < BOARD_HEIGHT_ONE_LESS; j++) {
-                if (i == 0 || i == 11 || j == 22) {
+                if (i == 0 || i == (BOARD_WIDTH_CELLS - 1) || j == (BOARD_HEIGHT_CELLS - 2)) {
                     well[i][j] = TColor.BAR;
                 } else {
                     well[i][j] = TColor.OPEN;
@@ -280,7 +308,6 @@ public class Tetris extends JPanel {
                 return true;
             }
 
-
             System.out.println("Taking attack: " + toTake);
 
             System.out.println("Remaining attack queue: ");
@@ -292,7 +319,7 @@ public class Tetris extends JPanel {
             rotation = toTake.rotation;
             currentPiece = toTake.pieceType;
 
-            int newY = checkTheoreticalPos();
+            int newY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
             pieceOrigin.y = newY;
 
             fixToWellNoNewPiece();
@@ -323,14 +350,14 @@ public class Tetris extends JPanel {
     }
 
     public List<Tetromino> generateNewBag() {
-        List<Tetromino> bag = new ArrayList<>(List.of(Tetromino.values()));
+        List<Tetromino> bag = new ArrayList<>(List.of(Tetromino.ORDER));
         Collections.shuffle(bag);
         return bag;
     }
 
     // Collision test for the dropping piece
     private boolean collidesAt(int x, int y, Rotation rotation) {
-        if(x < 0 || x > 11){
+        if (x < 0 || x > RIGHTMOST_PLAYABLE_X) {
             return true;
         }
         for (Point p : currentPiece.inRotation(rotation)) {
@@ -343,12 +370,10 @@ public class Tetris extends JPanel {
 
     // Rotate the piece clockwise or counterclockwise
     public void rotate(int i) {
-
+        //hacky workaround for t rotation?
         if (currentPiece == Tetromino.T_PIECE && (i == 1 || i == -1)) {
             i *= -1;
-            //hacky workaround for t rotation?
         }
-
 
         int newRotationIndex = (rotation.toInt() + i) % 4;
         if (newRotationIndex < 0) {
@@ -399,7 +424,7 @@ public class Tetris extends JPanel {
             // "send" piece to other board(s) // TODO: actually have either random or fixed targeting maybe?
             pieceOrigin.y = 0;
             this.broadcastMessage(MessageType.ATTACK, pieceOrigin.x + " " + pieceOrigin.y + " " + rotation.toInt() + " " + currentPiece.legacyInt);
-            ammo-=2; // make attacks cost 2 ammo
+            ammo -= 2; // make attacks cost 2 ammo
             newPiece();
             // skip placement of piece on player's board since it "went" to the other board(s)
             return;
@@ -457,21 +482,16 @@ public class Tetris extends JPanel {
     }
 
     public void dropToBottom() {
-
-//        while (!collidesAt(pieceOrigin.x, pieceOrigin.y + 1, rotation)) {
-//            pieceOrigin.y += 1;
-//        }
-        int newY = checkTheoreticalPos();
+        int newY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
         pieceOrigin.y = newY;
 
         fixToWell();
         repaint();
-
     }
 
-    public void dropToBottomAndBomb(){
-        if(bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5) {
-            int newY = checkTheoreticalPos();
+    public void dropToBottomAndBomb() {
+        if (bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5) {
+            int newY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
             pieceOrigin.y = newY;
             bombBoard();
         }
@@ -510,43 +530,44 @@ public class Tetris extends JPanel {
             case 1 -> {
                 score += 100;
                 this.broadcastMessage("LINE_CLEAR SINGLE");
-                ammoToAdd=1;
+                ammoToAdd = 1;
             }
             case 2 -> {
                 score += 300;
                 this.broadcastMessage("LINE_CLEAR DOUBLE");
-                ammoToAdd=2;
+                ammoToAdd = 2;
             }
             case 3 -> {
                 score += 500;
                 this.broadcastMessage("LINE_CLEAR TRIPLE");
-                ammoToAdd=3;
+                ammoToAdd = 3;
             }
             case 4 -> {
                 score += 800;
                 this.broadcastMessage("LINE_CLEAR TETRIS");
-                ammoToAdd=5;
+                ammoToAdd = 5;
             }
         }
-        ammo+=ammoToAdd;
-        if(ammo>20){
+        ammo += ammoToAdd;
+        if (ammo > 20) {
             ammo = 20; //hard cap at 20
         }
     }
 
     //checks for the theoretical y position of the gray Tetris.Tetromino (shadow piece)
-    public int checkTheoreticalPos() {
-        ArrayList<Integer> theor = new ArrayList<>();
-        for (Point p : currentPiece.inRotation(rotation)) {
+    // TODO make a data holder class for this maybe?
+    public int checkTheoreticalPos(Tetromino piece, Rotation rotation, int xPos, int yPos) {
+        ArrayList<Integer> candidates = new ArrayList<>();
+        for (Point p : piece.inRotation(rotation)) {
             int theoreticalVal = 0;
-            for (int j = p.y + pieceOrigin.y + 1; j < 22; j++) {
-                if (well[p.x + pieceOrigin.x][j] == TColor.OPEN) {
+            for (int j = p.y + yPos + 1; j < 22; j++) {
+                if (well[p.x + xPos][j] == TColor.OPEN) {
                     theoreticalVal++;
                 } else break;
             }
-            theor.add(theoreticalVal);
+            candidates.add(theoreticalVal);
         }
-        return Collections.min(theor) + pieceOrigin.y;
+        return Collections.min(candidates) + yPos;
     }
 
     // Draw the falling piece
@@ -561,57 +582,60 @@ public class Tetris extends JPanel {
             }
         }
 
+        int futureY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
         for (Point p : currentPiece.inRotation(rotation)) {
             g.fillRect((p.x + pieceOrigin.x) * CELL_SIZE,
-                    (p.y + checkTheoreticalPos()) * CELL_SIZE,
+                    (p.y + futureY) * CELL_SIZE,
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
 
 
-        if(pieceOrigin.y % 2 == 0){
-            if(bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5){
+        if (pieceOrigin.y % 2 == 0) { // so the bomb indicator blinks
+            if (bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5) {
                 g.setColor(new Color(128, 0, 0, 200)); // piece origin(for bombing)
-                g.fillRect((pieceOrigin.x * CELL_SIZE) + CELL_SIZE, (checkTheoreticalPos() * CELL_SIZE) + CELL_SIZE, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
+                int x = (pieceOrigin.x * CELL_SIZE) + CELL_SIZE;
+                int y = (futureY * CELL_SIZE) + CELL_SIZE;
+                g.fillRect(x, y, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
             }
         }
 
 
-
         g.setColor(currentPiece.tcolor.color);
         for (Point p : currentPiece.inRotation(rotation)) {
-
             g.fillRect((p.x + pieceOrigin.x) * CELL_SIZE,
                     (p.y + pieceOrigin.y) * CELL_SIZE,
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
     }
-    private void setCurrentDisplayedMessage(String message){
+
+    private void setCurrentDisplayedMessage(String message) {
         this.currentDisplayedMessage = message;
         this.messageTimeout = DEFAULT_MESSAGE_TIMEOUT;
     }
-    private void setCurrentDisplayedMessage(String message, int timeout){
+
+    private void setCurrentDisplayedMessage(String message, int timeout) {
         this.currentDisplayedMessage = message;
         this.messageTimeout = timeout;
     }
 
-    private void updateMessageCooldown(){
+    private void updateMessageCooldown() {
         this.messageTimeout--;
-        if(messageTimeout == 0){
+        if (messageTimeout == 0) {
             this.currentDisplayedMessage = "";
         }
     }
 
-    private void drawMessageBox(Graphics g){
+    private void drawMessageBox(Graphics g) {
         g.setColor(Color.WHITE);
-        g.fillRect(CELL_SIZE, (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)), (BOARD_WIDTH_CELLS - 2)*CELL_SIZE, (CELL_SIZE*3)/2); // draw the box for the message to appear in
-        if(this.currentDisplayedMessage != ""){
+        g.fillRect(CELL_SIZE, (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)), (BOARD_WIDTH_CELLS - 2) * CELL_SIZE, (CELL_SIZE * 3) / 2); // draw the box for the message to appear in
+        if (this.currentDisplayedMessage != "") {
             g.setColor(Color.BLACK);
 
             Font prevFont = g.getFont();
 
             Font announcerFont = new Font("Sans Serif", Font.BOLD, 14);
             g.setFont(announcerFont);
-            g.drawString(currentDisplayedMessage, CELL_SIZE + (CELL_SIZE/2), (CELL_SIZE * BOARD_HEIGHT_CELLS));
+            g.drawString(currentDisplayedMessage, CELL_SIZE + (CELL_SIZE / 2), (CELL_SIZE * BOARD_HEIGHT_CELLS));
 
             g.setFont(prevFont);
         }
@@ -624,18 +648,19 @@ public class Tetris extends JPanel {
         g.setColor(Color.red);
         int x = 13 - 5;
         int y = CELL_SIZE * 23;
-        int height = (int)(((double)this.attackQueue.size()/2) * CELL_SIZE);
+        int height = (int) (((double) this.attackQueue.size() / 2) * CELL_SIZE);
 
         g.fillRect(x, y - height, 10, height);
     }
+
     private void drawAmmoGauge(Graphics g) {
         if (this.ammo == 0) {
             return;
         }
         g.setColor(Color.orange);
-        int x = CELL_SIZE * BOARD_WIDTH_CELLS - (3*CELL_SIZE/4);
+        int x = CELL_SIZE * BOARD_WIDTH_CELLS - (3 * CELL_SIZE / 4);
         int y = CELL_SIZE * 23;
-        int height = (int)(((double)this.ammo/2) * CELL_SIZE);
+        int height = (int) (((double) this.ammo / 2) * CELL_SIZE);
 
         g.fillRect(x, y - height, 10, height);
     }
@@ -699,22 +724,22 @@ public class Tetris extends JPanel {
         drawPiece(g);
     }
 
-    public void bombBoard(){
+    public void bombBoard() {
         //From the tetris piece origin, erase surrounding area and send "debris" to random process
         //Other process must call clear line for sand
-        if(bombCooldown < BOMB_COOLDOWN_LENGTH){
+        if (bombCooldown < BOMB_COOLDOWN_LENGTH) {
             //System.out.println("Bomb on cooldown");
             setCurrentDisplayedMessage("BOMB ON COOLDOWN!", 2);
         }
 
-        if(bombCooldown >= BOMB_COOLDOWN_LENGTH){
+        if (bombCooldown >= BOMB_COOLDOWN_LENGTH) {
             bombCooldown = 0;
         } else {
-            if(ammo<5){
+            if (ammo < 5) {
                 setCurrentDisplayedMessage("NOT ENOUGH AMMO FOR BOMB!", 2);
                 return;
             }
-            ammo-=5;
+            ammo -= 5;
         }
 
 
@@ -722,9 +747,9 @@ public class Tetris extends JPanel {
         bombPosition.x = bombPosition.x - 1;
         bombPosition.y = bombPosition.y - 1;
 
-        for(int r = bombPosition.y; r < bombPosition.y + 5; r++){
-            for(int c = bombPosition.x; c < bombPosition.x + 5; c++){
-                if(!outOfBounds(c, r)){
+        for (int r = bombPosition.y; r < bombPosition.y + 5; r++) {
+            for (int c = bombPosition.x; c < bombPosition.x + 5; c++) {
+                if (!outOfBounds(c, r)) {
                     well[c][r] = TColor.OPEN;
                 }
             }
@@ -732,23 +757,24 @@ public class Tetris extends JPanel {
         newPiece();
 
     }
-    public void updateBombCooldown(){
+
+    public void updateBombCooldown() {
         bombCooldown++;
 
-        if(this.bombCooldown == BOMB_COOLDOWN_LENGTH){
+        if (this.bombCooldown == BOMB_COOLDOWN_LENGTH) {
             setCurrentDisplayedMessage("BOMB READY", 3);
         }
     }
 
-    public void updateCostCooldown(){
+    public void updateCostCooldown() {
         ammoCostCooldown++;
-        if(this.ammoCostCooldown == AMMO_COST_COOLDOWN_LENGTH){
+        if (this.ammoCostCooldown == AMMO_COST_COOLDOWN_LENGTH) {
             AMMO_COST = 2;
         }
     }
 
 
-    public boolean outOfBounds(int xloc, int yloc){
+    public boolean outOfBounds(int xloc, int yloc) {
         return xloc <= 0 || xloc >= 11 || yloc >= 22 || yloc <= 0;
     }
 
@@ -774,6 +800,7 @@ public class Tetris extends JPanel {
                 case KeyEvent.VK_SPACE -> game.dropToBottom();
                 case KeyEvent.VK_R -> game.init();
                 case KeyEvent.VK_SHIFT -> game.toggleMode();
+                case KeyEvent.VK_SEMICOLON -> game.dropSandEvent();
                 case KeyEvent.VK_Q -> game.bombBoard();
                 case KeyEvent.VK_E -> game.dropToBottomAndBomb();
             }

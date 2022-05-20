@@ -12,6 +12,7 @@ public enum TColor {
     GREEN("g", new Color(89, 177, 1)),
     PINK("p", new Color(175, 41, 138)),
     RED("r", new Color(215, 15, 55)),
+    SAND("x", new Color(190, 165, 106)),
     OPEN("*", Color.BLACK),
     BAR("|", Color.GRAY),
     UNKNOWN("N", Color.WHITE);

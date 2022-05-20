@@ -45,7 +45,13 @@ public enum Tetromino {
             {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)},
             {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
             {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(0, 2)}
-    }, TColor.RED);
+    }, TColor.RED),
+    SAND(7, new Point[][]{
+        {new Point(0, 0)},
+        {new Point(0, 0)},
+        {new Point(0, 0)},
+        {new Point(0, 0)}
+    }, TColor.SAND);
 
     public static final Tetromino[] ORDER = new Tetromino[]{I_PIECE, J_PIECE, L_PIECE, O_PIECE, S_PIECE, T_PIECE, Z_PIECE};
     public final Point[][] shapeRotations;
