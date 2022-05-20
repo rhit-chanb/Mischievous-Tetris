@@ -625,7 +625,7 @@ public class Tetris extends JPanel {
         g.setColor(Color.red);
         int x = 13 - 5;
         int y = CELL_SIZE * 23;
-        int height = (this.attackQueue.size() * CELL_SIZE) + CELL_SIZE;
+        int height = (int)(((double)this.attackQueue.size()/2) * CELL_SIZE);
 
         g.fillRect(x, y - height, 10, height);
     }
