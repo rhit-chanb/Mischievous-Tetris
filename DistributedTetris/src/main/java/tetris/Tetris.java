@@ -128,6 +128,11 @@ public class Tetris extends JPanel {
             }
             case CLEAR_VERTICAL_LINE -> {
                 //Choose random line from 1 - 11 to remove
+                Random rand = new Random();
+                int roll = rand.nextInt(11)+1;
+                for(int i = 0 ; i < 22; i++){
+                    well[roll][i] = TColor.OPEN;
+                }
             }
 
         }
