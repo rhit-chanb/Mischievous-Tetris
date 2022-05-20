@@ -70,7 +70,7 @@ public class Tetris extends JPanel {
         JFrame frame = new JFrame("Mischievous Tetris" + ((client == null) ? " Standalone" : ""));
         int boardWidthPx = (BOARD_WIDTH_CELLS * CELL_SIZE) + 10;
         int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED + ((5 * CELL_SIZE) / 2);
-        frame.setSize(boardWidthPx * 3, heightPx);
+        frame.setSize(boardWidthPx * 4, heightPx);
         frame.setVisible(true);
 
         instance.init();
