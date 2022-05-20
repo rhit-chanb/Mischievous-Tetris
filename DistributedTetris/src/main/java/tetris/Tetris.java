@@ -313,6 +313,9 @@ public class Tetris extends JPanel {
 
     // Collision test for the dropping piece
     private boolean collidesAt(int x, int y, Rotation rotation) {
+        if(x < 0 || x > 11){
+            return true;
+        }
         for (Point p : currentPiece.inRotation(rotation)) {
             if (well[p.x + x][p.y + y] != TColor.OPEN) {
                 return true;
@@ -375,11 +378,11 @@ public class Tetris extends JPanel {
     // collision detection.
     public void fixToWell() {
 
-        if (ammo > 0 && this.attacking) {
+        if (ammo >= 2 && this.attacking) {
             // "send" piece to other board(s) // TODO: actually have either random or fixed targeting maybe?
             pieceOrigin.y = 0;
             this.broadcastMessage(MessageType.ATTACK, pieceOrigin.x + " " + pieceOrigin.y + " " + rotation.toInt() + " " + currentPiece.legacyInt);
-            ammo--;
+            ammo-=2; // make attacks cost 2 ammo
             newPiece();
             // skip placement of piece on player's board since it "went" to the other board(s)
             return;
@@ -485,28 +488,32 @@ public class Tetris extends JPanel {
                 numClears += 1;
             }
         }
-
+        int ammoToAdd = 0;
         switch (numClears) {
             case 1 -> {
                 score += 100;
                 this.broadcastMessage("LINE_CLEAR SINGLE");
-                this.ammo += 1;
+                ammoToAdd=1;
             }
             case 2 -> {
                 score += 300;
                 this.broadcastMessage("LINE_CLEAR DOUBLE");
-                this.ammo += 2;
+                ammoToAdd=2;
             }
             case 3 -> {
                 score += 500;
                 this.broadcastMessage("LINE_CLEAR TRIPLE");
-                this.ammo += 3;
+                ammoToAdd=3;
             }
             case 4 -> {
                 score += 800;
                 this.broadcastMessage("LINE_CLEAR TETRIS");
-                this.ammo += 4;
+                ammoToAdd=5;
             }
+        }
+        ammo+=ammoToAdd;
+        if(ammo>20){
+            ammo = 20; //hard cap at 20
         }
     }
 
