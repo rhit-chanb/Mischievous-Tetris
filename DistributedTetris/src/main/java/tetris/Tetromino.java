@@ -65,10 +65,10 @@ public enum Tetromino {
     }
 
     public static Tetromino fromInt(int index) {
-        if (index < 0 || index >= ORDER.length) {
+        if (index < 0 || index >= values().length) {
             throw new RuntimeException("Invalid type index " + index);
         }
-        return ORDER[index];
+        return values()[index];
     }
 
     public Point[] inRotation(Rotation rot) {
