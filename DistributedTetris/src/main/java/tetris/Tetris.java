@@ -32,6 +32,8 @@ public class Tetris extends JPanel {
     public static final int CELL_SIZE_PADDED = CELL_SIZE - GRID_LINE_WIDTH;
     public static final int GAME_TICK_MS = 1000;
     public static final int DEFAULT_MESSAGE_TIMEOUT = 5; // number of game ticks a message persists for, if no timeout period is given
+    public static final int BOMB_COOLDOWN_LENGTH = 15;
+
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
     private static final double RANDOM_EVENT_CHANCE = 0.02;
@@ -51,6 +53,8 @@ public class Tetris extends JPanel {
     private boolean attacking = false;
     private String currentDisplayedMessage = "";
     private int messageTimeout;
+    private int bombCooldown;
+
 
     public Tetris() {
 
@@ -88,6 +92,7 @@ public class Tetris extends JPanel {
                     Thread.sleep(GAME_TICK_MS);
                     instance.dropDown();
                     instance.attemptRandomEvent();
+                    instance.updateBombCooldown();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -527,6 +532,16 @@ public class Tetris extends JPanel {
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
 
+
+        if(pieceOrigin.y % 2 == 0){
+            if(bombCooldown == BOMB_COOLDOWN_LENGTH || ammo >= 5){
+                g.setColor(new Color(128, 0, 0, 200)); // piece origin(for bombing)
+                g.fillRect((pieceOrigin.x * CELL_SIZE) + CELL_SIZE, (checkTheoreticalPos() * CELL_SIZE) + CELL_SIZE, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
+            }
+        }
+
+
+
         g.setColor(currentPiece.tcolor.color);
         for (Point p : currentPiece.inRotation(rotation)) {
 
@@ -620,6 +635,56 @@ public class Tetris extends JPanel {
         drawPiece(g);
     }
 
+    public void bombBoard(){
+        //From the tetris piece origin, erase surrounding area and send "debris" to random process
+        //Other process must call clear line for sand
+        if(bombCooldown < BOMB_COOLDOWN_LENGTH){
+            System.out.println("Bomb on cooldown!!");
+            return;
+        }
+
+        if(bombCooldown >= BOMB_COOLDOWN_LENGTH){
+            bombCooldown = 0;
+        } else {
+            if(ammo<5){
+                System.out.println("Not enough ammo for bomb!!");
+                return;
+            }
+        }
+
+
+        Point bombPosition = pieceOrigin;
+        bombPosition.x = bombPosition.x - 1;
+        bombPosition.y = bombPosition.y - 1;
+
+        for(int r = bombPosition.y; r < bombPosition.y + 5; r++){
+            for(int c = bombPosition.x; c < bombPosition.x + 5; c++){
+                //System.out.println("r" + r + " c " + c);
+                if(!outOfBounds(c, r)){
+                    //System.out.println("Hereeeeeeeeeeeeeeee");
+                    well[c][r] = TColor.OPEN;
+                }
+            }
+        }
+        newPiece();
+
+    }
+    public void updateBombCooldown(){
+        bombCooldown++;
+
+        if(this.bombCooldown == BOMB_COOLDOWN_LENGTH){
+            System.out.println("BOMB READY"); //TODO: Change to use Messagebox
+        }
+    }
+
+
+
+    public boolean outOfBounds(int xloc, int yloc){
+        //System.out.println("Yoooooooooooooooo");
+        return xloc <= 0 || xloc >= 11 || yloc >= 22;
+
+    }
+
     static class TetrisKeyListener implements KeyListener {
         private final Tetris game;
 
@@ -642,6 +707,7 @@ public class Tetris extends JPanel {
                 case KeyEvent.VK_SPACE -> game.dropToBottom();
                 case KeyEvent.VK_R -> game.init();
                 case KeyEvent.VK_SHIFT -> game.toggleMode();
+                case KeyEvent.VK_Q -> game.bombBoard();
             }
         }
 
