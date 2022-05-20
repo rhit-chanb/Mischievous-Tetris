@@ -56,7 +56,7 @@ Clients are given the ip and port of the matchmaking server on launch.
 To start the client from the released jar:
 
 ```bash
-java -cp .\TetrisClient-1.0.0-all.jar matchmaking.Matchmaker -port 26000 -addr localhost
+java -cp .\TetrisClient-1.0.0-all.jar networking.RealClient -port 26000 -addr localhost
 ```
 
 ### Console:
