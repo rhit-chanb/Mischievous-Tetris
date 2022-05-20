@@ -322,10 +322,6 @@ public class RealClient {
         }
         System.out.println("Num Proposals: " + proposals.size() + " Needed amt: " + (connections.size() + 1));
         if (proposals.size() >= connections.size() + 1) {
-            for (int p : proposals) {
-                System.out.print(p + " ");
-            }
-            System.out.println();
             try {
                 System.out.println("Deciding on event " + RandomEvent.fromInt(mostFrequent(proposals)));
                 if (this.underlying != null) underlying.triggerRandomEvent(RandomEvent.fromInt(mostFrequent(proposals)));
