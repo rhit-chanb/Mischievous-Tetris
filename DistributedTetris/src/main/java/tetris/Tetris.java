@@ -63,7 +63,7 @@ public class Tetris extends JPanel {
     public static void setUpGame(Tetris instance, RealClient client) {
         JFrame frame = new JFrame("Mischievous Tetris" + ((client == null) ? " Standalone" : ""));
         int boardWidthPx = (BOARD_WIDTH_CELLS * CELL_SIZE) + 10;
-        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED + (CELL_SIZE/2);
+        int heightPx = (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)) + CELL_SIZE_PADDED + ((5*CELL_SIZE)/2);
         frame.setSize(boardWidthPx * 3, heightPx);
         frame.setVisible(true);
 
@@ -93,6 +93,7 @@ public class Tetris extends JPanel {
                     instance.dropDown();
                     instance.attemptRandomEvent();
                     instance.updateBombCooldown();
+                    instance.updateMessageCooldown();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -534,7 +535,7 @@ public class Tetris extends JPanel {
 
 
         if(pieceOrigin.y % 2 == 0){
-            if(bombCooldown == BOMB_COOLDOWN_LENGTH || ammo >= 5){
+            if(bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5){
                 g.setColor(new Color(128, 0, 0, 200)); // piece origin(for bombing)
                 g.fillRect((pieceOrigin.x * CELL_SIZE) + CELL_SIZE, (checkTheoreticalPos() * CELL_SIZE) + CELL_SIZE, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
             }
@@ -550,17 +551,35 @@ public class Tetris extends JPanel {
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
         }
     }
+    private void setCurrentDisplayedMessage(String message){
+        this.currentDisplayedMessage = message;
+        this.messageTimeout = DEFAULT_MESSAGE_TIMEOUT;
+    }
+    private void setCurrentDisplayedMessage(String message, int timeout){
+        this.currentDisplayedMessage = message;
+        this.messageTimeout = timeout;
+    }
+
+    private void updateMessageCooldown(){
+        this.messageTimeout--;
+        if(messageTimeout == 0){
+            this.currentDisplayedMessage = "";
+        }
+    }
+
     private void drawMessageBox(Graphics g){
         g.setColor(Color.WHITE);
-        g.fillRect(CELL_SIZE, (CELL_SIZE * BOARD_HEIGHT_CELLS) - (CELL_SIZE*2), (BOARD_WIDTH_CELLS - 2)*CELL_SIZE, CELL_SIZE); // draw the box for the message to appear in
+        g.fillRect(CELL_SIZE, (CELL_SIZE * (BOARD_HEIGHT_CELLS - 1)), (BOARD_WIDTH_CELLS - 2)*CELL_SIZE, (CELL_SIZE*3)/2); // draw the box for the message to appear in
         if(this.currentDisplayedMessage != ""){
             g.setColor(Color.BLACK);
 
             Font prevFont = g.getFont();
 
-            Font announcerFont = new Font("Sans Serif", Font.BOLD, 18);
+            Font announcerFont = new Font("Sans Serif", Font.BOLD, 14);
             g.setFont(announcerFont);
-            g.drawString(currentDisplayedMessage, CELL_SIZE + (CELL_SIZE/2), (CELL_SIZE * BOARD_HEIGHT_CELLS) - (CELL_SIZE*2) + (CELL_SIZE/4));
+            g.drawString(currentDisplayedMessage, CELL_SIZE + (CELL_SIZE/2), (CELL_SIZE * BOARD_HEIGHT_CELLS));
+
+            g.setFont(prevFont);
         }
     }
 
@@ -574,10 +593,19 @@ public class Tetris extends JPanel {
         int height = (this.attackQueue.size() * CELL_SIZE) + CELL_SIZE;
 
         g.fillRect(x, y - height, 10, height);
-
-
-
     }
+    private void drawAmmoGauge(Graphics g) {
+        if (this.ammo == 0) {
+            return;
+        }
+        g.setColor(Color.orange);
+        int x = CELL_SIZE * BOARD_WIDTH_CELLS - (3*CELL_SIZE/4);
+        int y = CELL_SIZE * 23;
+        int height = (int)(((double)this.ammo/2) * CELL_SIZE);
+
+        g.fillRect(x, y - height, 10, height);
+    }
+
 
     @Override
     public void paintComponent(Graphics g) {
@@ -597,7 +625,9 @@ public class Tetris extends JPanel {
         }
 
         drawDamageGauge(g);
+        drawAmmoGauge(g);
 
+        drawMessageBox(g);
 
 
         g.setColor(boardBackground);
@@ -639,17 +669,18 @@ public class Tetris extends JPanel {
         //From the tetris piece origin, erase surrounding area and send "debris" to random process
         //Other process must call clear line for sand
         if(bombCooldown < BOMB_COOLDOWN_LENGTH){
-            System.out.println("Bomb on cooldown!!");
-            return;
+            //System.out.println("Bomb on cooldown");
+            setCurrentDisplayedMessage("BOMB ON COOLDOWN!", 2);
         }
 
         if(bombCooldown >= BOMB_COOLDOWN_LENGTH){
             bombCooldown = 0;
         } else {
             if(ammo<5){
-                System.out.println("Not enough ammo for bomb!!");
+                setCurrentDisplayedMessage("NOT ENOUGH AMMO FOR BOMB!", 2);
                 return;
             }
+            ammo-=5;
         }
 
 
@@ -671,14 +702,14 @@ public class Tetris extends JPanel {
         bombCooldown++;
 
         if(this.bombCooldown == BOMB_COOLDOWN_LENGTH){
-            System.out.println("BOMB READY"); //TODO: Change to use Messagebox
+            setCurrentDisplayedMessage("BOMB READY", 3);
         }
     }
 
 
 
     public boolean outOfBounds(int xloc, int yloc){
-        return xloc <= 0 || xloc >= 11 || yloc >= 22;
+        return xloc <= 0 || xloc >= 11 || yloc >= 22 || yloc <= 0;
     }
 
     static class TetrisKeyListener implements KeyListener {
