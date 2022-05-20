@@ -7,7 +7,10 @@ public enum RandomEvent {
     REMOVE_AMMO(1),
     CLEAR_LINES(2),
     CLEAR_VERTICAL_LINE(3),
-    ALL_ONE_PIECE(4), // TODO implement me
+    DISCOUNT_AMMO_COST(4),
+    REDUCE_ATTACK_QUEUE(5),
+    MAX_AMMO(6),
+//    ALL_ONE_PIECE(4), // TODO implement me
     NO_EVENT(100);
     private static final HashMap<Integer, RandomEvent> intToEvent;
 
