@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
@@ -40,6 +41,8 @@ public class Tetris extends JPanel {
     public static final int AMMO_COST_COOLDOWN_LENGTH = 5;
     public static final int MAX_AMMO_AMT = 20;
     public static final int SAND_EVENT_NUM_PIECES = 7;
+    public static final int ATTACK_AMMO_COST = 2;
+    public static final double BOMB_DEBRIS_ATTACK_CHANCE_PER_CELL = 0.8;
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
     private static final double RANDOM_EVENT_CHANCE = 0.02;
@@ -47,9 +50,10 @@ public class Tetris extends JPanel {
     private final List<Tetromino> nextPieces = new ArrayList<>();
     private final Map<Integer, TColor[][]> opponentBoards = new HashMap<>();
     public RealClient client;
+    Semaphore attackQueueLock;
     private Point pieceOrigin;
     private Tetromino currentPiece;
-    private Rotation rotation;
+    private Rotation currentRotation;
     private long score;
     private TColor[][] well;
     private int softLock = softLockConstant;
@@ -64,6 +68,7 @@ public class Tetris extends JPanel {
     private int ammoCostCooldown;
 
     public Tetris() {
+        attackQueueLock = new Semaphore(1);
     }
 
     public static void setUpGame(Tetris instance, RealClient client) {
@@ -113,8 +118,7 @@ public class Tetris extends JPanel {
     }
 
     public void attemptRandomEvent() {
-        Random rand = new Random();
-        double roll = rand.nextDouble();
+        double roll = new Random().nextDouble();
         if (roll <= RANDOM_EVENT_CHANCE) {
             if (this.client != null) {
                 this.client.startRandomEvent();
@@ -155,10 +159,16 @@ public class Tetris extends JPanel {
             case REDUCE_ATTACK_QUEUE -> {
                 try {
                     if (!attackQueue.isEmpty()) {
-                        int size = attackQueue.size();
-                        for (int i = 0; i < size; i++) {
+                        try {
+                            attackQueueLock.acquire();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        int toRemove = attackQueue.size() / 2;
+                        for (int i = 0; i < toRemove; i++) {
                             attackQueue.remove(i);
                         }
+                        attackQueueLock.release();
                     }
                 } catch (ConcurrentModificationException e) {
                     setCurrentDisplayedMessage("No Reduced piece queue!", 3);
@@ -213,7 +223,13 @@ public class Tetris extends JPanel {
     }
 
     public void handleAttack(EnemyPiece piece, int from) {
+        try {
+            attackQueueLock.acquire();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         this.attackQueue.add(piece);
+        attackQueueLock.release();
 
         setCurrentDisplayedMessage("Attack from P" + from, 1);
 
@@ -296,9 +312,15 @@ public class Tetris extends JPanel {
     public boolean takeAttackFromQueue() {
         boolean success = false;
         if (!attackQueue.isEmpty()) {
+            try {
+                attackQueueLock.acquire();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             EnemyPiece toTake = attackQueue.remove(0);
             if (ammo > 0) {
                 ammo--;
+                attackQueueLock.release();
                 return true;
             }
 
@@ -307,12 +329,14 @@ public class Tetris extends JPanel {
             for (EnemyPiece p : attackQueue) {
                 System.out.println("\t" + attackQueue);
             }
+            attackQueueLock.release();
+            setCurrentDisplayedMessage("RECEIVED AN ATTACK!", 2);
 
             pieceOrigin = toTake.pieceOrigin;
-            rotation = toTake.rotation;
+            currentRotation = toTake.rotation;
             currentPiece = toTake.pieceType;
 
-            int newY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
+            int newY = checkTheoreticalPos(currentPiece, currentRotation, pieceOrigin.x, pieceOrigin.y);
             pieceOrigin.y = newY;
 
             fixToWellNoNewPiece();
@@ -332,7 +356,7 @@ public class Tetris extends JPanel {
 
         softLock = softLockConstant; // reset softlock
         pieceOrigin = new Point(5, 0); // TODO: spawn piece above the board
-        rotation = Rotation._0;
+        currentRotation = Rotation._0;
         if (nextPieces.isEmpty()) {
             nextPieces.addAll(generateNewBag());
             // TODO: change nextPieces to be able to be modified by outside events
@@ -368,20 +392,20 @@ public class Tetris extends JPanel {
             i *= -1;
         }
 
-        int newRotationIndex = (rotation.toInt() + i) % 4;
+        int newRotationIndex = (currentRotation.toInt() + i) % 4;
         if (newRotationIndex < 0) {
             newRotationIndex = 3;
         }
         Rotation newRotation = Rotation.fromInt(newRotationIndex);
         if (!collidesAt(pieceOrigin.x, pieceOrigin.y, newRotation)) {
-            rotation = newRotation;
+            currentRotation = newRotation;
         }
         repaint();
     }
 
     // Move the piece left or right
     public void move(int i) {
-        if (!collidesAt(pieceOrigin.x + i, pieceOrigin.y, rotation)) {
+        if (!collidesAt(pieceOrigin.x + i, pieceOrigin.y, currentRotation)) {
             pieceOrigin.x += i;
         }
         repaint();
@@ -394,7 +418,7 @@ public class Tetris extends JPanel {
     // Drops the piece one line or fixes it to the well if it can't drop
     public void dropDown() {
         if (this.status == TGameStatus.PLAYING) {
-            if (!collidesAt(pieceOrigin.x, pieceOrigin.y + 1, rotation)) {
+            if (!collidesAt(pieceOrigin.x, pieceOrigin.y + 1, currentRotation)) {
                 pieceOrigin.y += 1;
             } else {
                 if (softLock > 0) {
@@ -409,21 +433,24 @@ public class Tetris extends JPanel {
 
     }
 
+    private void sendAttack(int x, int y, Rotation rotation, Tetromino piece) {
+        this.broadcastMessage(MessageType.ATTACK, x + " " + y + " " + rotation.toInt() + " " + piece.legacyInt);
+    }
+
     // Make the dropping piece part of the well, so it is available for
     // collision detection.
     public void fixToWell() {
 
         if (ammo >= AMMO_COST && this.attacking) {
             // "send" piece to other board(s) // TODO: actually have either random or fixed targeting maybe?
-            pieceOrigin.y = 0;
-            this.broadcastMessage(MessageType.ATTACK, pieceOrigin.x + " " + pieceOrigin.y + " " + rotation.toInt() + " " + currentPiece.legacyInt);
-            ammo -= 2; // make attacks cost 2 ammo
+            sendAttack(pieceOrigin.x, 0, currentRotation, currentPiece);
+            ammo -= ATTACK_AMMO_COST;
             newPiece();
             // skip placement of piece on player's board since it "went" to the other board(s)
             return;
         }
 
-        for (Point p : currentPiece.inRotation(rotation)) {
+        for (Point p : currentPiece.inRotation(currentRotation)) {
             well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
         }
         clearRows();
@@ -442,15 +469,12 @@ public class Tetris extends JPanel {
         }
     }
 
+    // TODO why is this a tweaked copy-paste of fixToWell?
     public void fixToWellNoNewPiece() {
-        for (Point p : currentPiece.inRotation(rotation)) {
+        for (Point p : currentPiece.inRotation(currentRotation)) {
             well[pieceOrigin.x + p.x][pieceOrigin.y + p.y] = currentPiece.tcolor;
         }
         clearRows();
-
-        // TODO probably abstract broadcasts elsewhere so we don't need to null check
-        //  or maybe make a fake client
-        //  client was null (maybe testing offline?)
 
         this.broadcastMessage(MessageType.UPDATE_BOARD_STATE, this.BoardToString(this.well));
 
@@ -475,7 +499,7 @@ public class Tetris extends JPanel {
     }
 
     public void dropToBottom() {
-        int newY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
+        int newY = checkTheoreticalPos(currentPiece, currentRotation, pieceOrigin.x, pieceOrigin.y);
         pieceOrigin.y = newY;
 
         fixToWell();
@@ -484,7 +508,7 @@ public class Tetris extends JPanel {
 
     public void dropToBottomAndBomb() {
         if (bombCooldown >= BOMB_COOLDOWN_LENGTH || ammo >= 5) {
-            int newY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
+            int newY = checkTheoreticalPos(currentPiece, currentRotation, pieceOrigin.x, pieceOrigin.y);
             pieceOrigin.y = newY;
             bombBoard();
         }
@@ -575,8 +599,8 @@ public class Tetris extends JPanel {
             }
         }
 
-        int futureY = checkTheoreticalPos(currentPiece, rotation, pieceOrigin.x, pieceOrigin.y);
-        for (Point p : currentPiece.inRotation(rotation)) {
+        int futureY = checkTheoreticalPos(currentPiece, currentRotation, pieceOrigin.x, pieceOrigin.y);
+        for (Point p : currentPiece.inRotation(currentRotation)) {
             g.fillRect((p.x + pieceOrigin.x) * CELL_SIZE,
                     (p.y + futureY) * CELL_SIZE,
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
@@ -594,7 +618,7 @@ public class Tetris extends JPanel {
 
 
         g.setColor(currentPiece.tcolor.color);
-        for (Point p : currentPiece.inRotation(rotation)) {
+        for (Point p : currentPiece.inRotation(currentRotation)) {
             g.fillRect((p.x + pieceOrigin.x) * CELL_SIZE,
                     (p.y + pieceOrigin.y) * CELL_SIZE,
                     CELL_SIZE_PADDED, CELL_SIZE_PADDED);
@@ -743,7 +767,6 @@ public class Tetris extends JPanel {
             ammo -= BOMB_AMMO_COST;
         }
 
-
         Point bombPosition = pieceOrigin;
         bombPosition.x = bombPosition.x - 1;
         bombPosition.y = bombPosition.y - 1;
@@ -751,12 +774,16 @@ public class Tetris extends JPanel {
         for (int r = bombPosition.y; r < bombPosition.y + 5; r++) {
             for (int c = bombPosition.x; c < bombPosition.x + 5; c++) {
                 if (!outOfBounds(c, r)) {
-                    well[c][r] = TColor.OPEN;
+                    if (well[c][r] != TColor.OPEN) {
+                        well[c][r] = TColor.OPEN;
+                        if (new Random().nextDouble() <= BOMB_DEBRIS_ATTACK_CHANCE_PER_CELL) {
+                            sendAttack(c, r, Rotation._0, Tetromino.SAND);
+                        }
+                    }
                 }
             }
         }
         newPiece();
-
     }
 
     public void updateBombCooldown() {
