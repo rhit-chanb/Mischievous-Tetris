@@ -305,8 +305,7 @@ public class Tetris extends JPanel {
     }
 
     public List<Tetromino> generateNewBag() {
-        List<Tetromino> bag = new ArrayList<>();
-        Collections.addAll(bag, Tetromino.I_PIECE, Tetromino.J_PIECE, Tetromino.L_PIECE, Tetromino.O_PIECE, Tetromino.S_PIECE, Tetromino.T_PIECE, Tetromino.Z_PIECE);
+        List<Tetromino> bag = new ArrayList<>(List.of(Tetromino.values()));
         Collections.shuffle(bag);
         return bag;
     }
