@@ -807,10 +807,10 @@ public class Tetris extends JPanel {
                 case KeyEvent.VK_D -> game.move(+1);
                 case KeyEvent.VK_S -> game.dropDown();
                 case KeyEvent.VK_SPACE -> game.dropToBottom();
-                case KeyEvent.VK_R -> game.init();
                 case KeyEvent.VK_SHIFT -> game.toggleMode();
                 case KeyEvent.VK_Q -> game.bombBoard();
                 case KeyEvent.VK_E -> game.dropToBottomAndBomb();
+                case KeyEvent.VK_R -> game.init();
             }
         }
 
