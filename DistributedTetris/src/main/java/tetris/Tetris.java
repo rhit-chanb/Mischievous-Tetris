@@ -31,6 +31,7 @@ public class Tetris extends JPanel {
     public static final int GRID_LINE_WIDTH = 1;
     public static final int CELL_SIZE_PADDED = CELL_SIZE - GRID_LINE_WIDTH;
     public static final int GAME_TICK_MS = 1000;
+    public static final int BOMB_COOLDOWN_LENGTH = 15;
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
     private static final double RANDOM_EVENT_CHANCE = 0.2;
@@ -48,6 +49,7 @@ public class Tetris extends JPanel {
     private ArrayList<EnemyPiece> attackQueue;
     private int ammo;
     private boolean attacking = false;
+    private int bombCooldown;
 
     public Tetris() {
 
@@ -85,6 +87,7 @@ public class Tetris extends JPanel {
                     Thread.sleep(GAME_TICK_MS);
                     instance.dropDown();
                     instance.attemptRandomEvent();
+                    instance.updateBombCooldown();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -516,8 +519,10 @@ public class Tetris extends JPanel {
 
 
         if(pieceOrigin.y % 2 == 0){
-            g.setColor(new Color(128, 0, 0, 200)); // piece origin(for bombing)
-            g.fillRect((pieceOrigin.x * CELL_SIZE) + CELL_SIZE, (checkTheoreticalPos() * CELL_SIZE) + CELL_SIZE, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
+            if(bombCooldown == BOMB_COOLDOWN_LENGTH || ammo >= 5){
+                g.setColor(new Color(128, 0, 0, 200)); // piece origin(for bombing)
+                g.fillRect((pieceOrigin.x * CELL_SIZE) + CELL_SIZE, (checkTheoreticalPos() * CELL_SIZE) + CELL_SIZE, CELL_SIZE_PADDED, CELL_SIZE_PADDED);
+            }
         }
 
 
@@ -603,9 +608,18 @@ public class Tetris extends JPanel {
     public void bombBoard(){
         //From the tetris piece origin, erase surrounding area and send "debris" to random process
         //Other process must call clear line for sand
-        if(ammo < 5){
-            System.out.println("Not enough ammo for bomb!!");
+        if(bombCooldown < BOMB_COOLDOWN_LENGTH){
+            System.out.println("Bomb on cooldown!!");
             return;
+        }
+
+        if(bombCooldown >= BOMB_COOLDOWN_LENGTH){
+            bombCooldown = 0;
+        } else {
+            if(ammo<5){
+                System.out.println("Not enough ammo for bomb!!");
+                return;
+            }
         }
 
 
@@ -625,6 +639,14 @@ public class Tetris extends JPanel {
         newPiece();
 
     }
+    public void updateBombCooldown(){
+        bombCooldown++;
+
+        if(this.bombCooldown == BOMB_COOLDOWN_LENGTH){
+            System.out.println("BOMB READY"); //TODO: Change to use Messagebox
+        }
+    }
+
 
 
     public boolean outOfBounds(int xloc, int yloc){
