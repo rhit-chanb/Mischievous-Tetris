@@ -14,12 +14,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.Serial;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class Tetris extends JPanel {
     public static final String BOARD_ROW_SEPARATOR = "S";
@@ -33,6 +28,8 @@ public class Tetris extends JPanel {
     public static final int GAME_TICK_MS = 1000;
     public static final int DEFAULT_MESSAGE_TIMEOUT = 5; // number of game ticks a message persists for, if no timeout period is given
     public static final int BOMB_COOLDOWN_LENGTH = 15;
+    public static final int AMMO_COST_COOLDOWN_LENGTH = 5;
+    public static final int MAX_AMMO_AMT = 20;
 
     @Serial
     private static final long serialVersionUID = -8715353373678321308L;
@@ -54,6 +51,8 @@ public class Tetris extends JPanel {
     private String currentDisplayedMessage = "";
     private int messageTimeout;
     private int bombCooldown;
+    private int AMMO_COST = 2;
+    private int ammoCostCooldown;
 
 
     public Tetris() {
@@ -94,6 +93,7 @@ public class Tetris extends JPanel {
                     instance.attemptRandomEvent();
                     instance.updateBombCooldown();
                     instance.updateMessageCooldown();
+                    instance.updateCostCooldown();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -141,6 +141,24 @@ public class Tetris extends JPanel {
                     well[roll][i] = TColor.OPEN;
                 }
             }
+            case DISCOUNT_AMMO_COST -> {
+                AMMO_COST = 1;
+                ammoCostCooldown = 0;
+            }
+            case REDUCE_ATTACK_QUEUE -> {
+                try {
+                    if (!attackQueue.isEmpty()) {
+                        int size = attackQueue.size();
+                        for (int i = 0; i < size; i++) {
+                            attackQueue.remove(i);
+                        }
+                    }
+                }
+                catch(ConcurrentModificationException e){
+                    setCurrentDisplayedMessage("No Reduced piece queue!", 3);
+                }
+            }
+            case MAX_AMMO -> ammo = MAX_AMMO_AMT;
 
         }
     }
@@ -378,7 +396,7 @@ public class Tetris extends JPanel {
     // collision detection.
     public void fixToWell() {
 
-        if (ammo >= 2 && this.attacking) {
+        if (ammo >= AMMO_COST && this.attacking) {
             // "send" piece to other board(s) // TODO: actually have either random or fixed targeting maybe?
             pieceOrigin.y = 0;
             this.broadcastMessage(MessageType.ATTACK, pieceOrigin.x + " " + pieceOrigin.y + " " + rotation.toInt() + " " + currentPiece.legacyInt);
@@ -723,6 +741,12 @@ public class Tetris extends JPanel {
         }
     }
 
+    public void updateCostCooldown(){
+        ammoCostCooldown++;
+        if(this.ammoCostCooldown == AMMO_COST_COOLDOWN_LENGTH){
+            AMMO_COST = 2;
+        }
+    }
 
 
     public boolean outOfBounds(int xloc, int yloc){
