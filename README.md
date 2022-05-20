@@ -85,4 +85,8 @@ E - Fast drop and detonate bomb (costs Ammo if it's on cooldown)
 
 <!-- R - Secret splat -->
 
+## Dev Setup
 
+We're all using IntelliJ and our run configurations should be stored with the project files.
+
+To build a version for shipping, run the Gradle `shadowJar` task (we're using Shadow in case we had dependencies, which we don't right now).
